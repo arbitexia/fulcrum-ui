@@ -4,7 +4,7 @@
  */
 
 /**
- * Author: Diego Martinez
+ * Author: Ritesh Patel
  */
 import { AccessTokenType } from '@/types';
 import axios from 'axios';

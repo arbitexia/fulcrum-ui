@@ -4,7 +4,7 @@
  */
 
 /**
- * Author: Diego Martinez
+ * Author: Ritesh Patel
  */
 export const write_cookie = (
   name: string,
