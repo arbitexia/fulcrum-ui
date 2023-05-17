@@ -1,0 +1,67 @@
+{
+  "env": {
+    "jest": true,
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "ignorePatterns": ["config/copyright.js"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "notice", "react-hooks"],
+  "rules": {
+    "quotes": "off",
+    "prefer-const": "warn",
+    "react/prop-types": "off",
+    "import/prefer-default-export": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "@next/next/no-sync-scripts": "off",
+    "import/no-anonymous-default-export": "off",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern" : "^_" }],
+    "@typescript-eslint/no-namespace": 0,
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": ["error"],
+    "no-use-before-define": "off",
+    "@typescript-eslint/no-use-before-define": ["error"],
+    "react/jsx-filename-extension": [ "warn", {"extensions": [".tsx"]} ],
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "ts": "never",
+        "tsx": "never"
+      }
+    ],
+    "@typescript-eslint/explicit-function-return-type": [
+      "error",
+      {
+        "allowExpressions": true
+      }
+    ],
+    "notice/notice": [
+      "error",
+      {
+        "templateFile": "config/copyright.js",
+        "templateVars": {
+          "AUTHOR": "Diego Martinez"
+        },
+        "varRegexps": {
+          "AUTHOR":"[A-Za-z0-9 ]+"
+        },
+        "messages": {
+          "whenFailedToMatch": "Missing Red Vector copyright notice"
+        }
+      }
+    ]
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": {}
+    }
+  }
+}

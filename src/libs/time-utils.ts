@@ -1,0 +1,18 @@
+/**
+ * Copyright (c) 2022, Red Vector, Inc.
+ * All rights reserved
+ */
+
+/**
+ * Author: Dan Finkel
+ */
+
+export const HOUR_AS_MILLISECONDS_FROM_EPOCH = 60 * 60 * 1000;
+export const DAY_AS_MILLISECONDS_FROM_EPOCH =
+  24 * HOUR_AS_MILLISECONDS_FROM_EPOCH;
+export const WEEK_AS_MILLISECONDS_FROM_EPOCH =
+  7 * DAY_AS_MILLISECONDS_FROM_EPOCH;
+export const MONTH_AS_MILLISECONDS_FROM_EPOCH =
+  30 * DAY_AS_MILLISECONDS_FROM_EPOCH;
+export const YEAR_AS_MILLISECONDS_FROM_EPOCH =
+  365 * DAY_AS_MILLISECONDS_FROM_EPOCH;

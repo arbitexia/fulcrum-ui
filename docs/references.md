@@ -1,0 +1,1 @@
+* [Hosting a Next.js App(With routing) on AWS S3](https://www.alpeaudio.com/post/hosting-a-next-js-app-with-routing-on-aws-s3/)

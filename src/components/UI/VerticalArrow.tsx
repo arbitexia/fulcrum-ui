@@ -1,0 +1,34 @@
+/**
+ * Copyright (c) 2022, Red Vector, Inc.
+ * All rights reserved
+ */
+
+/**
+ * Author: Diego Martinez
+ */
+import React from 'react';
+interface UIVerticalArrowProps {
+  direction: number;
+  color: string;
+}
+
+export const UIVerticalArrow = ({
+  direction,
+  color,
+}: UIVerticalArrowProps): JSX.Element => {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 11 11"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M4.11093 4.25625L4.11102 9.77246C4.11103 10.3932 4.67104 10.8949 5.36396 10.8949C6.05687 10.8949 6.61688 10.3932 6.61687 9.77249L6.61678 4.25627L8.02212 5.51522C8.51213 5.95419 9.30518 5.9534 9.7943 5.51524C10.2843 5.07628 10.2843 4.36664 9.79428 3.92767L6.3394 0.832672C6.32345 0.818383 6.3075 0.804095 6.29244 0.792189C6.06382 0.565164 5.73243 0.423868 5.36381 0.423864C4.99698 0.423861 4.66558 0.565152 4.4352 0.792173C4.42102 0.804873 4.40419 0.818367 4.38912 0.831862L0.933424 3.92759C0.444309 4.36576 0.444317 5.07699 0.933441 5.51516C1.42345 5.95413 2.2165 5.95334 2.70561 5.51518L4.11093 4.25625Z"
+        fill={color}
+        transform={`rotate(${direction * 180})`}
+      />
+    </svg>
+  );
+};
