@@ -49,8 +49,8 @@ export const UIFlexColumnBox = styled(Box)(({ theme }) => ({
 
 export const UILayoutMain = styled('main')({
   minHeight: '100vh',
-  width: `100vw`,
-  marginLeft: `30px`,
+  width: `calc(100% - 96px)`,
+  marginLeft: `96px`,
   overflowY: 'auto',
   backgroundColor: '#ECEFF1',
 });
