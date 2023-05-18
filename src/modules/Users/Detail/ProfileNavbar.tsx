@@ -73,7 +73,7 @@ const UserDetailNavbar = ({
           accessToken,
           entityId,
           entityStatus: statusValue,
-          author: 'Diego Martinez',
+          author: '',
           timeStamp: Date.now(),
         })
       );
@@ -118,7 +118,6 @@ const UserDetailNavbar = ({
                 <StyledTypography>Status</StyledTypography>
                 <UISelectBox
                   id="demo-simple-select-helper"
-                  defaultValue={statusList.default}
                   value={entityStatus ?? statusList.default}
                   label="status"
                   onChange={handleSelectChange}
@@ -248,13 +247,14 @@ const UserDetailNavbar = ({
           accessToken={accessToken}
         />
       )}
-      {entityProperties && (
+      {entityProperties && accessToken && (
         <ActionModal
           open={openAction}
           onClose={() => setOpenAction(false)}
           entityName={
             (entityProperties?.name ?? missingNamePlaceHolder) as string
           }
+          accessToken={accessToken}
         />
       )}
     </UIContainer>

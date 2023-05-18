@@ -131,12 +131,14 @@ export const EditFilterModal = ({
         filterId && filterId === 'NEW'
           ? { ...currentFilter, id: null }
           : currentFilter;
+
+      const author: string = (newFilter && newFilter.owner) ?? '';
       const filterJson = JSON.stringify(newFilter);
       dispatchSave({
         accessToken: accessToken,
         filterId: filterId === 'NEW' ? '' : filterId,
         filterJson,
-        author: 'Diego Martinez',
+        author,
         name: currentFilter?.name ?? '',
         lastUpdateDate: Date.now(),
       }).then(() => onClose());

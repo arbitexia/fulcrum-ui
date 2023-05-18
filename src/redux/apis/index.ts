@@ -20,3 +20,4 @@ export * as externalApi from './external.api';
 export * as riskApi from './risk.api';
 export * as governanceApi from './governance.api';
 export * as authApi from './auth.api';
+export * as notificationsApi from './notifications.api';

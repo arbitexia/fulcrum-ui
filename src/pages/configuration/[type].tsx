@@ -456,9 +456,15 @@ const Models = (): JSX.Element => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     appToast({ severity: 'success', message: 'Scoring request started' });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    dispatch(fullRun({}));
+    if (cookieAccessToken) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        fullRun({
+          accessToken: cookieAccessToken,
+        })
+      );
+    }
   };
 
   const deleteFunction = ({

@@ -766,6 +766,20 @@ export const modelsSelector = (state: RootState): Model[] => {
   return models;
 };
 
+export const getActiveModels = (
+  state: RootState
+): { [modelId: string]: Model } => {
+  const models = modelsSelector(state);
+  const activeModels: { [modelId: string]: Model } = {};
+  models.forEach((model: Model) => {
+    const { id: modelId, active } = model;
+    if (active && modelId) {
+      activeModels[modelId] = model;
+    }
+  });
+  return activeModels;
+};
+
 export const modelIdsToNamesSelector = (
   state: RootState
 ): UISelectInterface[] => {

@@ -84,7 +84,7 @@ export const CommentModal = ({
         accessToken,
         entityId: entityId,
         entityComment: newComment,
-        author: 'Diego Martinez',
+        author: '',
       }).then(() => {
         saveNewComment('');
         setNeedsReload(true);

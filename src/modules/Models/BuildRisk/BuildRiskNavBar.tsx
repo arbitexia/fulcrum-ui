@@ -131,12 +131,13 @@ const BuildRiskNavbar = ({
     const itemId = item && item.id;
     const name = (item && item.name) ?? '';
     const riskItem = itemId && itemId === 'NEW' ? { ...item, id: null } : item;
+    const author: string = (riskItem && riskItem.owner) ?? '';
     const attributeJson = JSON.stringify(riskItem);
     if (accessToken) {
       dispatchSave({
         accessToken,
         attributeJson,
-        author: 'Diego Martinez',
+        author,
         name,
         lastUpdateDate: Date.now(),
       }).then(() => router.push('/configuration/risk').then(noop));

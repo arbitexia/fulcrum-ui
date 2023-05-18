@@ -112,12 +112,13 @@ const ConfigurationTable = ({
       modelId && modelId === 'NEW'
         ? { ...model, id: null, active: !oldActiveFlag }
         : { ...model, active: !oldActiveFlag };
+    const author = (model && model.owner) ?? '';
     const modelJson = JSON.stringify(newModel);
     if (accessToken) {
       dispatchModify({
         accessToken,
         modelJson,
-        author: 'Diego Martinez',
+        author,
         modelId: modelId === 'NEW' ? '' : modelId,
         lastUpdateDate: Date.now(),
         active: !oldActiveFlag,
@@ -221,7 +222,8 @@ const ConfigurationTable = ({
             tableList,
             getComparator(order, orderBy)
           ).map(([row, _], rowIndex) => {
-            const rowKey = 'id' in row ? row.id : row.listId;
+            const listIdKey = 'listId' in row ? row.listId : rowIndex;
+            const rowKey = 'id' in row ? row.id : listIdKey;
             return (
               <TableRow
                 sx={{

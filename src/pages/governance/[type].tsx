@@ -40,6 +40,7 @@ import {
   isGovernanceAuditEventsInitializedSelector,
   retrieveMaskingSystemAutoUnmaskTopCount,
   isGovernanceAutoUnmaskTopCountInitializedSelector,
+  isEntityStatusFailed,
 } from '@/redux/slices';
 import { GetEntityParams } from '@/types';
 
@@ -73,6 +74,7 @@ const Models = (): JSX.Element => {
     isReady: boolean;
   };
   const { type: activeTab } = query as { type: string };
+  const isEntityStatusFailedValue = useAppSelector(isEntityStatusFailed);
   const isGovernanceSystemMaskingInitialized = useAppSelector(
     isGovernanceSystemMaskingInitializedSelector
   );
@@ -308,6 +310,7 @@ const Models = (): JSX.Element => {
       activeTab === 'unmask' &&
       isGovernanceEntitiesToMaskInitialized &&
       cookieAccessToken &&
+      !isEntityStatusFailedValue &&
       needMaskedEntitiesValues &&
       needMaskedEntitiesValues.length > 0
     ) {
@@ -324,6 +327,7 @@ const Models = (): JSX.Element => {
     cookieAccessToken,
     needMaskedEntitiesValues,
     isGovernanceEntitiesToMaskInitialized,
+    isEntityStatusFailedValue,
     dispatch,
     activeTab,
   ]);
@@ -344,6 +348,7 @@ const Models = (): JSX.Element => {
       activeTab === 'status' &&
       isGovernanceEntityStatusesInitialized &&
       cookieAccessToken &&
+      !isEntityStatusFailedValue &&
       needEntityStatusIdsSelector &&
       needEntityStatusIdsSelector.length > 0
     ) {
@@ -358,6 +363,7 @@ const Models = (): JSX.Element => {
     }
   }, [
     cookieAccessToken,
+    isEntityStatusFailedValue,
     needEntityStatusIdsSelector,
     isGovernanceEntityStatusesInitialized,
     dispatch,

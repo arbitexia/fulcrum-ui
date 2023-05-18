@@ -6,7 +6,8 @@
 /**
  * Author: Diego Martinez
  */
-type SideBarMenu = {
+export type SideBarMenu = {
+  name: string;
   route: string;
   imgPath: string;
   title: string;
@@ -14,39 +15,60 @@ type SideBarMenu = {
 };
 
 export const sidebarMenus: SideBarMenu[] = [
-  { route: '/home', imgPath: 'images/icons/home.svg', title: 'Home' },
   {
+    name: 'home',
+    route: '/home',
+    imgPath: 'images/icons/home.svg',
+    title: 'Home',
+  },
+  {
+    name: 'share',
     route: '/share',
     imgPath: 'images/icons/discovery.svg',
     title: 'Discovery',
     display: false,
   },
-  { route: '/reports', imgPath: 'images/icons/chart.svg', title: 'Reports' },
   {
+    name: 'reports',
+    route: '/reports',
+    imgPath: 'images/icons/chart.svg',
+    title: 'Reports',
+  },
+  {
+    name: 'configuration',
     route: '/configuration/model',
     imgPath: 'images/icons/models-configuration.svg',
     title: 'Models',
   },
   {
+    name: 'analytics',
     route: '/analytics',
     imgPath: 'images/icons/graph.svg',
     title: 'Status',
   },
   {
+    name: 'notifications',
     route: '/notifications/view',
     imgPath: 'images/icons/bell.svg',
     title: 'Notifications',
   },
   {
+    name: 'settings',
     route: '/settings',
     imgPath: 'images/icons/settings.svg',
     title: 'Admin',
     display: false,
   },
   {
+    name: 'governance',
     route: '/governance/unmask',
     imgPath: 'images/icons/profile.svg',
     title: 'Governance',
   },
-  { route: '/logout', imgPath: 'images/icons/logout.svg', title: 'Logout' },
+  {
+    name: 'logout',
+    route: '/logout',
+    imgPath: 'images/icons/logout.svg',
+    title: 'Logout',
+  },
 ];

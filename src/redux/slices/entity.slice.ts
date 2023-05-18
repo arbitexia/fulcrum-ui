@@ -77,6 +77,7 @@ const initialState: ReduxJson.EntitiesState = {
   initialized: false,
   status: null,
   entities: {},
+  entitiesPending: {},
   isCommentsInitialized: false,
   isStatusInitialized: false,
   rankingByEntityId: {},
@@ -254,8 +255,15 @@ const entitiesSlice = createSlice({
         state.status = ResponseStatus.FAILED;
         state.entities = {};
       })
-      .addCase(getEntity.pending, (state) => {
+      .addCase(getEntity.pending, (state, { meta }) => {
         state.loading = true;
+        const { arg: params } = meta;
+        const { entityId } = params;
+        const newEntitiesPending = {
+          ...state.entitiesPending,
+          [entityId]: true,
+        };
+        state.entitiesPending = newEntitiesPending;
         state.initialized = false;
         state.status = ResponseStatus.PENDING;
       })
@@ -263,8 +271,6 @@ const entitiesSlice = createSlice({
         getEntity.fulfilled,
         (state, { payload }: PayloadAction<Entity>) => {
           state.loading = false;
-          state.initialized = true;
-          state.status = ResponseStatus.SUCCESS;
           const { entityId, properties } = payload;
           const newProperties: { [propertyId: string]: string } = {};
           Object.entries(properties).forEach(([key, value]) => {
@@ -276,16 +282,33 @@ const entitiesSlice = createSlice({
             ...state.entities,
             [entityId]: newEntity,
           };
+          const { [entityId]: _value, ...newEntitiesPending } =
+            state.entitiesPending;
+          state.entitiesPending = newEntitiesPending;
+          state.initialized = true;
+          state.status = ResponseStatus.SUCCESS;
         }
       )
-      .addCase(getEntity.rejected, (state) => {
+      .addCase(getEntity.rejected, (state, { meta }) => {
         state.loading = false;
+        const { arg: params } = meta;
+        const { entityId } = params;
+        const { [entityId]: _value, ...newEntitiesPending } =
+          state.entitiesPending;
+        state.entitiesPending = newEntitiesPending;
+        state.entities = {};
         state.initialized = true;
         state.status = ResponseStatus.FAILED;
-        state.entities = {};
       })
-      .addCase(getUnmaskedEntity.pending, (state) => {
+      .addCase(getUnmaskedEntity.pending, (state, { meta }) => {
         state.loading = true;
+        const { arg: params } = meta;
+        const { entityId } = params;
+        const newEntitiesPending = {
+          ...state.entitiesPending,
+          [entityId]: true,
+        };
+        state.entitiesPending = newEntitiesPending;
         state.initialized = false;
         state.status = ResponseStatus.PENDING;
       })
@@ -293,8 +316,6 @@ const entitiesSlice = createSlice({
         getUnmaskedEntity.fulfilled,
         (state, { payload }: PayloadAction<Entity>) => {
           state.loading = false;
-          state.initialized = true;
-          state.status = ResponseStatus.SUCCESS;
           const { entityId, properties } = payload;
           const newProperties: { [propertyId: string]: string } = {};
           Object.entries(properties).forEach(([key, value]) => {
@@ -306,13 +327,23 @@ const entitiesSlice = createSlice({
             ...state.entities,
             [entityId]: newEntity,
           };
+          const { [entityId]: _value, ...newEntitiesPending } =
+            state.entitiesPending;
+          state.entitiesPending = newEntitiesPending;
+          state.initialized = true;
+          state.status = ResponseStatus.SUCCESS;
         }
       )
-      .addCase(getUnmaskedEntity.rejected, (state) => {
+      .addCase(getUnmaskedEntity.rejected, (state, { meta }) => {
         state.loading = false;
+        const { arg: params } = meta;
+        const { entityId } = params;
+        const { [entityId]: _value, ...newEntitiesPending } =
+          state.entitiesPending;
+        state.entitiesPending = newEntitiesPending;
+        state.entities = {};
         state.initialized = true;
         state.status = ResponseStatus.FAILED;
-        state.entities = {};
       })
       .addCase(queryEntities.pending, (state) => {
         state.loading = true;
@@ -749,15 +780,82 @@ export const hasEntitiesSelector =
 export const needsEntitiesSelector =
   (entityIds: string[]): ((state: RootState) => string[]) =>
   (state: RootState) => {
+    const entityIdsSet: Set<string> = new Set<string>(entityIds);
+    const entitiesPending: Set<string> = new Set<string>(
+      Object.keys(state.entities.entitiesPending)
+    );
+    const entitiesStillExtant: Set<string> = difference<string>(
+      entityIdsSet,
+      entitiesPending
+    );
     if (entityIds && entityIds.length > 0) {
       if (state.entities.entities) {
-        const entityIdsSet = new Set(entityIds);
-        const stateEntities = new Set(Object.keys(state.entities.entities));
-        const setDifference = difference<string>(entityIdsSet, stateEntities);
+        const stateEntities: Set<string> = new Set<string>(
+          Object.keys(state.entities.entities)
+        );
+        const setDifference: Set<string> = difference<string>(
+          entitiesStillExtant,
+          stateEntities
+        );
         return Array.from(setDifference);
       }
     }
-    return [...entityIds];
+    return Array.from(entitiesStillExtant);
+  };
+
+const transformProperties =
+  (properties: PropertyType): ((state: RootState) => PropertyType) =>
+  (state: RootState) => {
+    const newProperties = { ...properties };
+    const {
+      entityProperties: entityConfigProperties,
+      entityDetailProperties: entityConfigDetailProperties,
+    } = state.config.entities;
+    entityConfigProperties.forEach(
+      (entityConfigProperty: EntityPropertyBase | string) => {
+        if (
+          typeof entityConfigProperty === 'string' &&
+          !(entityConfigProperty in newProperties)
+        ) {
+          newProperties[entityConfigProperty] = '';
+        } else if (typeof entityConfigProperty === 'object') {
+          const entityConfigPropertyBase: EntityPropertyBase =
+            entityConfigProperty as EntityPropertyBase;
+          const { propertyName, values = [] } = entityConfigPropertyBase;
+          if (!(propertyName in newProperties)) {
+            newProperties[propertyName] = values
+              ? values
+                  .map((value) => newProperties[value] ?? '')
+                  .join(' ')
+                  .trim()
+              : '';
+          }
+        }
+      }
+    );
+    entityConfigDetailProperties.forEach(
+      (entityConfigProperty: EntityPropertyBase | string) => {
+        if (
+          typeof entityConfigProperty === 'string' &&
+          !(entityConfigProperty in newProperties)
+        ) {
+          newProperties[entityConfigProperty] = '';
+        } else if (typeof entityConfigProperty === 'object') {
+          const entityConfigPropertyBase: EntityPropertyBase =
+            entityConfigProperty as EntityPropertyBase;
+          const { propertyName, values = [] } = entityConfigPropertyBase;
+          if (!(propertyName in newProperties)) {
+            newProperties[propertyName] = values
+              ? values
+                  .map((value) => newProperties[value] ?? '')
+                  .join(' ')
+                  .trim()
+              : '';
+          }
+        }
+      }
+    );
+    return newProperties;
   };
 
 export const entityPropertiesByIdSelector =
@@ -766,56 +864,7 @@ export const entityPropertiesByIdSelector =
     if (entityId && state.entities.entities) {
       if (state.entities.entities[entityId]) {
         const { properties } = state.entities.entities[entityId];
-        const newProperties = { ...properties };
-        const {
-          entityProperties: entityConfigProperties,
-          entityDetailProperties: entityConfigDetailProperties,
-        } = state.config.entities;
-        entityConfigProperties.forEach(
-          (entityConfigProperty: EntityPropertyBase | string) => {
-            if (
-              typeof entityConfigProperty === 'string' &&
-              !(entityConfigProperty in newProperties)
-            ) {
-              newProperties[entityConfigProperty] = '';
-            } else if (typeof entityConfigProperty === 'object') {
-              const entityConfigPropertyBase: EntityPropertyBase =
-                entityConfigProperty as EntityPropertyBase;
-              const { propertyName, values = [] } = entityConfigPropertyBase;
-              if (!(propertyName in newProperties)) {
-                newProperties[propertyName] = values
-                  ? values
-                      .map((value) => newProperties[value] ?? '')
-                      .join(' ')
-                      .trim()
-                  : '';
-              }
-            }
-          }
-        );
-        entityConfigDetailProperties.forEach(
-          (entityConfigProperty: EntityPropertyBase | string) => {
-            if (
-              typeof entityConfigProperty === 'string' &&
-              !(entityConfigProperty in newProperties)
-            ) {
-              newProperties[entityConfigProperty] = '';
-            } else if (typeof entityConfigProperty === 'object') {
-              const entityConfigPropertyBase: EntityPropertyBase =
-                entityConfigProperty as EntityPropertyBase;
-              const { propertyName, values = [] } = entityConfigPropertyBase;
-              if (!(propertyName in newProperties)) {
-                newProperties[propertyName] = values
-                  ? values
-                      .map((value) => newProperties[value] ?? '')
-                      .join(' ')
-                      .trim()
-                  : '';
-              }
-            }
-          }
-        );
-        return newProperties;
+        return transformProperties(properties)(state);
       }
     }
     return undefined;
@@ -858,16 +907,16 @@ const defaultTransformer = (
   _item: string | number | boolean | null
 ): string | number | boolean => '';
 
-export const convertEntitiesPropertiesToDashBoardTable = (
+export const getEntitiesByIdWithMasking = (
   state: RootState
-): PropertyType[] => {
+): { [entityId: string]: Entity } => {
   const entities: { [id: string]: Entity } =
     (state.entities?.entities && state?.entities?.entities) ?? null;
   const isMaskingOn = getSystemMaskingSelector(state);
+  const entitiesMasked: { [entityId: string]: Entity } = {};
   if (entities) {
-    return Object.entries(entities).map(
+    Object.entries(entities).forEach(
       ([entityId, entity]: [entityid: string, entity: Entity]) => {
-        const unmaskToken: string = entity.unmaskToken;
         const maskedEntityStatus: string =
           getMaskedEntityStatusSelector(entityId)(state);
         const maskedEntityIcon: string =
@@ -888,7 +937,10 @@ export const convertEntitiesPropertiesToDashBoardTable = (
         const maskedProperties: {
           [key: string]: string | number | boolean | null;
         } = {};
-        Object.entries(entity.properties).forEach(([key, value]) => {
+        const transformedProperties = transformProperties(entity.properties)(
+          state
+        );
+        Object.entries(transformedProperties).forEach(([key, value]) => {
           if (
             isMaskingOn &&
             existsPropertyMasked &&
@@ -903,9 +955,9 @@ export const convertEntitiesPropertiesToDashBoardTable = (
             maskedProperties[key] = value;
           }
         });
-        return {
-          ...maskedProperties,
-          id: entityId,
+        const newEntity: Entity = {
+          ...entity,
+          properties: maskedProperties,
           isMasked:
             isMaskingOn &&
             existsPropertyMasked &&
@@ -915,6 +967,28 @@ export const convertEntitiesPropertiesToDashBoardTable = (
               ? maskedEntityStatus
               : 'approved',
           icon: isMaskingOn && existsPropertyMasked ? maskedEntityIcon : null,
+        };
+        entitiesMasked[entityId] = newEntity;
+      }
+    );
+  }
+  return entitiesMasked;
+};
+
+export const convertEntitiesPropertiesToDashBoardTable = (
+  state: RootState
+): PropertyType[] => {
+  const entities: { [id: string]: Entity } = getEntitiesByIdWithMasking(state);
+  if (entities) {
+    return Object.entries(entities).map(
+      ([entityId, entity]: [entityid: string, entity: Entity]) => {
+        const unmaskToken: string = entity.unmaskToken;
+        return {
+          ...entity.properties,
+          id: entityId,
+          isMasked: entity.isMasked ?? false,
+          maskingStatus: entity.maskingStatus ?? 'approved',
+          icon: entity.icon ?? null,
           unmaskToken,
         };
       }

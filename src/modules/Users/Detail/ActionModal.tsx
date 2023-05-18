@@ -47,10 +47,12 @@ export const ActionModal = ({
   open,
   onClose,
   entityName,
+  accessToken,
 }: {
   open: boolean;
   onClose: () => void;
   entityName: string;
+  accessToken: string;
 }): JSX.Element => {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -90,35 +92,37 @@ export const ActionModal = ({
       actionTime,
     };
     const externalJson = JSON.stringify(newItem);
-    dispatchSave({
-      accessToken: 'abc123',
-      externalJson,
-      author: 'Diego Martinez',
-      lastUpdateDate: Date.now(),
-    }).then(() =>
-      dispatch(
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        retrieveExternalData({
-          accessToken: 'abc123',
-          entityId,
-        })
-      )
-    );
+    if (accessToken) {
+      dispatchSave({
+        accessToken,
+        externalJson,
+        author: '',
+        lastUpdateDate: Date.now(),
+      }).then(() =>
+        dispatch(
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          retrieveExternalData({
+            accessToken,
+            entityId,
+          })
+        )
+      );
+    }
   };
 
   useEffect(() => {
-    if (isReady && entityId) {
+    if (accessToken && isReady && entityId) {
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         retrieveExternalData({
-          accessToken: 'abc123',
+          accessToken,
           entityId,
         })
       );
     }
-  }, [dispatch, isReady, entityId]);
+  }, [dispatch, isReady, entityId, accessToken]);
 
   useEffect(() => {
     setExternalData(externals);

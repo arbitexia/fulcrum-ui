@@ -27,6 +27,7 @@ export default {
     RISK: process.env.RISK_URL,
     AUDIT: process.env.AUDIT_URL,
     GOVERNANCE: process.env.GOVERNANCE_URL,
+    NOTIFICATIONS: process.env.NOTIFICATIONS_URL,
   },
   ACCESS_CONTROL_ALLOWED_METHODS: {
     API: ['GET', 'POST'],
@@ -41,5 +42,6 @@ export default {
     RISK: ['POST'],
     AUDIT: ['POST'],
     GOVERNANCE: ['POST'],
+    NOTIFICATIONS: ['GET', 'POST'],
   },
 };

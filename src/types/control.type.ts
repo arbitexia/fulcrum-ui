@@ -8,5 +8,5 @@
  */
 
 export type ControlParams = {
-  // all control APIs currently do not require extra params
+  accessToken: string;
 };
