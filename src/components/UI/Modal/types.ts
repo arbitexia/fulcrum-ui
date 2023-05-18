@@ -18,6 +18,7 @@ export interface UIDefaultDialogProps {
   showBtn?: boolean;
   onBtnClick?: () => void;
   modalWidth?: string;
+  modalHeight?: string;
   showSecondaryBtn?: boolean;
   secondaryBtnClick?: () => void;
   secondaryBtnText?: string;
@@ -46,6 +47,7 @@ export interface StyledModalButtonProps extends ButtonProps {
 
 export interface UIDefaultDialogWidthProps {
   width?: string;
+  height?: string;
 }
 export interface UIConfirmationModalProps {
   open: boolean;

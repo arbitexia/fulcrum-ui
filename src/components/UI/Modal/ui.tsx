@@ -31,12 +31,13 @@ export const StyledSideDialog = styled(Dialog)<StyledSideDialogProps>(
 );
 
 export const StyledDialogBox = styled(Dialog)<UIDefaultDialogWidthProps>(
-  ({ width }) => ({
+  ({ width, height }) => ({
     '& .MuiDialog-paper': {
       background: '#FFFFFF',
       border: '1px solid #000000',
       borderRadius: '0px',
       maxWidth: width,
+      maxHeight: height,
     },
     '& .MuiDialogActions-root': {
       padding: '1rem 0px 0px 0px',

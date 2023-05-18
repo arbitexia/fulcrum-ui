@@ -57,6 +57,8 @@ export const UIDefaultTextField = styled(TextField)({
     color: '#0050BE',
     '&::placeholder': {
       opacity: 1,
+      color: 'grey',
+      fontStyle: 'italic',
     },
     overflowX: 'clip',
     overflowY: 'clip',
@@ -80,7 +82,6 @@ export const UITextArea = styled(TextField)<UITextAreaProps>(({ border }) => ({
   minWidth: '250px',
   borderRadius: '6px',
   '& .MuiInputBase-root': {
-    padding: '9px 14px',
     borderRadius: '6px',
   },
   '& .MuiOutlinedInput-root.Mui-focused': {
@@ -96,6 +97,10 @@ export const UITextArea = styled(TextField)<UITextAreaProps>(({ border }) => ({
     fontSize: '14px',
     lineHeight: '24px',
     color: '#0050BE',
-    '&::placeholder': { opacity: 1 },
+    '&::placeholder': {
+      opacity: 1,
+      color: 'grey',
+      fontStyle: 'italic',
+    },
   },
 }));

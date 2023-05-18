@@ -20,6 +20,8 @@ import { AxiosError } from 'axios';
 import {
   DeleteAttributeParams,
   NewAttributeParams,
+  OutlierBase,
+  OutlierKeys,
   RetrieveAttributeParams,
   RetrieveAttributesParams,
   RiskIndicatorExcludeItems,
@@ -31,12 +33,20 @@ import {
   WEEK_AS_MILLISECONDS_FROM_EPOCH,
 } from '@/libs/time-utils';
 import { convertScore } from '@/libs/math-utils';
+import {
+  dateData,
+  filterOptionData,
+  overTimeData,
+  reduceData,
+  useData,
+} from '@/_mock';
 import { checkAuthToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.AttributesState = {
   loading: true,
   status: null,
   isAttributesInitialized: false,
+  hasDeleteAttributeMessage: false,
   attributes: {},
   newAttribute: null,
   currentAttributeId: null,
@@ -111,399 +121,62 @@ type riskIndicatorBuilderFunctionInputType = {
   inputRiskIndicator: RiskIndicatorType;
   value: number[] | string[] | string | number | undefined;
   listIndex?: number | undefined;
+  dataSourceId?: string | undefined;
+  riskFieldId?: string | undefined;
+  secondRiskFieldId?: string | undefined;
 };
 
-type riskIndicatorBuilderFunctionType = (
-  arg0: riskIndicatorBuilderFunctionInputType
-) => RiskIndicatorType;
+const customOutlierValues: { [attributeType in OutlierKeys]: OutlierBase } = {
+  outlier_val: {
+    occurrenceBased: false,
+    scoringType: 'MAX_OUTLIER',
+    unitInMillis: HOUR_AS_MILLISECONDS_FROM_EPOCH,
+    periodInMillis: WEEK_AS_MILLISECONDS_FROM_EPOCH,
+    periodInUnits:
+      WEEK_AS_MILLISECONDS_FROM_EPOCH / HOUR_AS_MILLISECONDS_FROM_EPOCH,
+    subFrameInUnits:
+      DAY_AS_MILLISECONDS_FROM_EPOCH / HOUR_AS_MILLISECONDS_FROM_EPOCH,
+    unitWeightingStart: 22,
+    unitWeightingStop: 6,
+    unitWeightingOffset: 22,
+    unitWeightingLength: 8,
+    unitWeightingMultiplier: 3,
+    periodWeightingMultiplier: 2,
+    fillInUnits: 0,
+  },
+  outlier_time: {
+    occurrenceBased: true,
+    scoringType: 'MAX_OUTLIER',
+    unitInMillis: HOUR_AS_MILLISECONDS_FROM_EPOCH,
+    periodInMillis: WEEK_AS_MILLISECONDS_FROM_EPOCH,
+    periodInUnits:
+      WEEK_AS_MILLISECONDS_FROM_EPOCH / HOUR_AS_MILLISECONDS_FROM_EPOCH,
+    subFrameInUnits:
+      DAY_AS_MILLISECONDS_FROM_EPOCH / HOUR_AS_MILLISECONDS_FROM_EPOCH,
+    unitWeightingStart: 22,
+    unitWeightingStop: 6,
+    unitWeightingOffset: 22,
+    unitWeightingLength: 8,
+    unitWeightingMultiplier: 3,
+    periodWeightingMultiplier: 2,
+    fillInUnits: 6,
+  },
+};
 
-const valueListOperation: {
-  [riskType: string]: (
-    inputRiskIndicatorType: RiskIndicatorType
-  ) => RiskIndicatorType;
-} = {
-  value: (inputRiskIndicatorType: RiskIndicatorType): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'value',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: [{ values: [], weight: 0.0 }],
-      rangeList: undefined,
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  outlier_val: (
-    inputRiskIndicatorType: RiskIndicatorType
-  ): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'outlier_val',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: false,
-      scoringType: 'MAX_OUTLIER',
-      unitInMillis: HOUR_AS_MILLISECONDS_FROM_EPOCH,
-      periodInMillis: WEEK_AS_MILLISECONDS_FROM_EPOCH,
-      periodInUnits:
-        WEEK_AS_MILLISECONDS_FROM_EPOCH / HOUR_AS_MILLISECONDS_FROM_EPOCH,
-      subFrameInUnits:
-        DAY_AS_MILLISECONDS_FROM_EPOCH / HOUR_AS_MILLISECONDS_FROM_EPOCH,
-      unitWeightingStart: 22,
-      unitWeightingStop: 6,
-      unitWeightingOffset: 22,
-      unitWeightingLength: 8,
-      unitWeightingMultiplier: 3,
-      periodWeightingMultiplier: 2,
-      fillInUnits: 0,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  outlier_time: (
-    inputRiskIndicatorType: RiskIndicatorType
-  ): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'outlier_time',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: true,
-      scoringType: 'MAX_OUTLIER',
-      unitInMillis: HOUR_AS_MILLISECONDS_FROM_EPOCH,
-      periodInMillis: WEEK_AS_MILLISECONDS_FROM_EPOCH,
-      periodInUnits:
-        WEEK_AS_MILLISECONDS_FROM_EPOCH / HOUR_AS_MILLISECONDS_FROM_EPOCH,
-      subFrameInUnits:
-        DAY_AS_MILLISECONDS_FROM_EPOCH / HOUR_AS_MILLISECONDS_FROM_EPOCH,
-      unitWeightingStart: 22,
-      unitWeightingStop: 6,
-      unitWeightingOffset: 22,
-      unitWeightingLength: 8,
-      unitWeightingMultiplier: 3,
-      periodWeightingMultiplier: 2,
-      fillInUnits: 6,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  within: (inputRiskIndicatorType: RiskIndicatorType): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'within',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  trend: (inputRiskIndicatorType: RiskIndicatorType): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'trend',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  unique: (inputRiskIndicatorType: RiskIndicatorType): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'unique',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  count: (inputRiskIndicatorType: RiskIndicatorType): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'count',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  summation: (inputRiskIndicatorType: RiskIndicatorType): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'summation',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  sentiment: (inputRiskIndicatorType: RiskIndicatorType): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'sentiment',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  discrepancy: (
-    inputRiskIndicatorType: RiskIndicatorType
-  ): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'discrepancy',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  similarity: (
-    inputRiskIndicatorType: RiskIndicatorType
-  ): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'similarity',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
-  normalize: (inputRiskIndicatorType: RiskIndicatorType): RiskIndicatorType => {
-    return {
-      ...inputRiskIndicatorType,
-      attributeType: 'normalize',
-      dataSource: 'access',
-      riskField: 'id',
-      dataSource2: undefined,
-      riskField2: undefined,
-      valueList: undefined,
-      rangeList: [{ rangeStart: 0, rangeEnd: 0, weight: 0.0 }],
-      orderList: undefined,
-      min: undefined,
-      max: undefined,
-      occurrenceBased: undefined,
-      scoringType: undefined,
-      unitInMillis: undefined,
-      periodInUnits: undefined,
-      subFrameInUnits: undefined,
-      unitWeightingStart: undefined,
-      unitWeightingStop: undefined,
-      unitWeightingOffset: undefined,
-      unitWeightingLength: undefined,
-      unitWeightingMultiplier: undefined,
-      periodWeightingMultiplier: undefined,
-      fillInUnits: undefined,
-      featureFilter: undefined,
-      timeFilter: undefined,
-      agingDays: undefined,
-    };
-  },
+const defaultOutlierValues: OutlierBase = {
+  occurrenceBased: undefined,
+  scoringType: undefined,
+  unitInMillis: undefined,
+  periodInMillis: undefined,
+  periodInUnits: undefined,
+  subFrameInUnits: undefined,
+  unitWeightingStart: undefined,
+  unitWeightingStop: undefined,
+  unitWeightingOffset: undefined,
+  unitWeightingLength: undefined,
+  unitWeightingMultiplier: undefined,
+  periodWeightingMultiplier: undefined,
+  fillInUnits: undefined,
 };
 
 export const updateFeatures = (
@@ -527,6 +200,229 @@ export const updateFeatures = (
     ...inputRiskIndicator,
     features: newFeatureList,
   };
+};
+
+const getNewRiskIndicator: (
+  inputRiskIndicatortype: RiskIndicatorType,
+  attributeType: string,
+  dataSourceId: string,
+  riskFieldId: string,
+  secondRiskFieldId?: string
+) => RiskIndicatorType = (
+  inputRiskIndicatortype: RiskIndicatorType,
+  attributeType: string,
+  dataSourceId: string,
+  riskFieldId: string,
+  secondRiskFieldId?: string
+): RiskIndicatorType => {
+  const outlierKey = attributeType as OutlierKeys;
+  const outlierValues: OutlierBase =
+    attributeType in customOutlierValues
+      ? customOutlierValues[outlierKey]
+      : defaultOutlierValues;
+  const newRiskIndicator: RiskIndicatorType = {
+    ...inputRiskIndicatortype,
+    attributeType,
+    dataSource: dataSourceId,
+    riskField: riskFieldId,
+    dataSource2: dataSourceId,
+    riskField2: secondRiskFieldId,
+    valueList: [{ values: [], weight: 0.0 }],
+    rangeList: undefined,
+    orderList: undefined,
+    min: undefined,
+    max: undefined,
+    featureFilter: [
+      {
+        field: riskFieldId || '',
+        feature:
+          dataSourceId && riskFieldId ? `${dataSourceId}::${riskFieldId}` : '',
+        type: filterOptionData[1].id || '',
+        values: [],
+      },
+      {
+        field: secondRiskFieldId || '',
+        feature:
+          dataSourceId && riskFieldId
+            ? `${dataSourceId}::${secondRiskFieldId}`
+            : '',
+        type: filterOptionData[1].id || '',
+        values: [],
+      },
+    ],
+    timeFilter: undefined,
+    agingDays: undefined,
+    windowInDays: undefined,
+    useData: useData[0].id,
+    useOverTime: overTimeData[1].id,
+    useDateValue: 0,
+    useDateType: dateData[0].id,
+    reduceType: reduceData[1].id,
+    reduceDateValue: 0,
+    reduceDateType: dateData[0].id,
+    ...outlierValues,
+  };
+  return updateFeatures(newRiskIndicator);
+};
+
+type riskIndicatorBuilderFunctionType = (
+  arg0: riskIndicatorBuilderFunctionInputType
+) => RiskIndicatorType;
+
+const valueListOperation: {
+  [riskType: string]: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId?: string | undefined,
+    riskFieldId?: string | undefined,
+    secondRiskFieldId?: string | undefined
+  ) => RiskIndicatorType;
+} = {
+  value: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    _secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'value',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
+  outlier_val: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    _secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'outlier_val',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
+  outlier_time: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    _secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'outlier_time',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
+  within: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    _secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'within',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
+  trend: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    _secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'trend',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
+  unique: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    _secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'unique',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
+  count: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    _secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'count',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
+  summation: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'summation',
+      dataSourceId || '',
+      riskFieldId || '',
+      secondRiskFieldId || ''
+    ),
+  sentiment: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'sentiment',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
+  discrepancy: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'discrepancy',
+      dataSourceId || '',
+      riskFieldId || '',
+      secondRiskFieldId || ''
+    ),
+  similarity: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'similarity',
+      dataSourceId || '',
+      riskFieldId || '',
+      secondRiskFieldId || ''
+    ),
+  normalize: (
+    inputRiskIndicatorType: RiskIndicatorType,
+    dataSourceId,
+    riskFieldId,
+    _secondRiskFieldId
+  ): RiskIndicatorType =>
+    getNewRiskIndicator(
+      inputRiskIndicatorType,
+      'normalize',
+      dataSourceId || '',
+      riskFieldId || ''
+    ),
 };
 
 export const updateOutlierConfig = (
@@ -587,10 +483,12 @@ export const updateAging = (
 export const updateTimeFilter = (
   inputRiskIndicator: RiskIndicatorType
 ): RiskIndicatorType => {
-  const useData = inputRiskIndicator.useData as string;
+  const riskIndicatorUseData = inputRiskIndicator.useData as string;
   const useOverTime = inputRiskIndicator.useOverTime as string;
   const useDataTimeValue = inputRiskIndicator.useDateValue as number;
   const useDataTimeScale = inputRiskIndicator.useDateType as string;
+  const startDate = inputRiskIndicator.useStartDate as string;
+  const endDate = inputRiskIndicator.useEndDate as string;
   const newTimeFilter: RiskIndicatorIncludeTimes = {
     type: '',
     value: -1,
@@ -598,9 +496,8 @@ export const updateTimeFilter = (
     startDate: '',
     endDate: '',
   };
-  // currently, the UI only supports 'All Data' and 'WITHIN_THE_LAST' combinations for filtering
   if (
-    useData == 'All Data' &&
+    riskIndicatorUseData == 'All Data' &&
     useOverTime == 'WITHIN_THE_LAST' &&
     useDataTimeScale &&
     useDataTimeValue > 0
@@ -608,10 +505,22 @@ export const updateTimeFilter = (
     newTimeFilter.type = useOverTime;
     newTimeFilter.value = useDataTimeValue;
     newTimeFilter.units = useDataTimeScale;
+  } else if (
+    riskIndicatorUseData === 'All Data' &&
+    useOverTime === 'BETWEEN_DATES' &&
+    startDate &&
+    endDate
+  ) {
+    newTimeFilter.type = useOverTime;
+    newTimeFilter.startDate = startDate;
+    newTimeFilter.endDate = endDate;
   }
+  const hasChanged =
+    newTimeFilter.value > 0 ||
+    (newTimeFilter.startDate !== '' && newTimeFilter.endDate !== '');
   return {
     ...inputRiskIndicator,
-    timeFilter: newTimeFilter.value > 0 ? newTimeFilter : undefined, // if value wasn't overwritten, we set timeFilter to undefined
+    timeFilter: hasChanged ? newTimeFilter : undefined, // if value wasn't overwritten, we set timeFilter to undefined
   };
 };
 
@@ -630,22 +539,49 @@ const riskIndicatorFunctionsByOperator: {
       description: value as string,
     };
   },
-  changeRiskType: ({ inputRiskIndicator, value }) => {
-    return valueListOperation[value as string](inputRiskIndicator);
+  changeRiskType: ({
+    inputRiskIndicator,
+    dataSourceId,
+    riskFieldId,
+    secondRiskFieldId,
+    value,
+  }) => {
+    return valueListOperation[value as string](
+      inputRiskIndicator,
+      dataSourceId,
+      riskFieldId,
+      secondRiskFieldId
+    );
   },
-  changeDataSource: ({ inputRiskIndicator, value }) => {
-    const newRiskIndicator = {
-      ...inputRiskIndicator,
-      dataSource: value as string,
-      riskField: '',
-    };
+  changeDataSource: ({
+    inputRiskIndicator,
+    value,
+    riskFieldId,
+    secondRiskFieldId,
+  }) => {
+    const newRiskIndicator = secondRiskFieldId
+      ? {
+          ...inputRiskIndicator,
+          dataSource: value as string,
+          riskField: riskFieldId as string,
+          riskField2: secondRiskFieldId as string,
+        }
+      : {
+          ...inputRiskIndicator,
+          dataSource: value as string,
+          riskField: riskFieldId as string,
+        };
     return updateFeatures(newRiskIndicator);
   },
-  changeSecondDataSource: ({ inputRiskIndicator, value }) => {
+  changeSecondDataSource: ({
+    inputRiskIndicator,
+    value,
+    secondRiskFieldId,
+  }) => {
     const newRiskIndicator = {
       ...inputRiskIndicator,
       dataSource2: value as string,
-      riskField2: '',
+      riskField2: secondRiskFieldId as string,
     };
     return updateFeatures(newRiskIndicator);
   },
@@ -664,19 +600,17 @@ const riskIndicatorFunctionsByOperator: {
     return updateFeatures(newRiskIndicator);
   },
   changeRiskFieldCountingValues: ({ inputRiskIndicator, value }) => {
-    const valueString = value as string;
+    const values = value as string[];
     return {
       ...inputRiskIndicator,
-      values:
-        !valueString || valueString.length === 0 ? [] : valueString.split(', '),
+      values,
     };
   },
   changeRiskFieldSummationValues: ({ inputRiskIndicator, value }) => {
-    const valueString = value as string;
+    const values = value as string[];
     return {
       ...inputRiskIndicator,
-      values:
-        !valueString || valueString.length === 0 ? [] : valueString.split(', '),
+      values,
     };
   },
   changeRiskFieldDiscrepancyWindowInDays: ({ inputRiskIndicator, value }) => {
@@ -784,22 +718,30 @@ const riskIndicatorFunctionsByOperator: {
         inputRiskIndicator.valueList && inputRiskIndicator.valueList.length > 0
           ? [...inputRiskIndicator.valueList]
           : [];
-
       if (
         actualRiskIndex >= 0 &&
         riskValueList &&
         riskValueList.length > 0 &&
-        actualRiskIndex < riskValueList.length
+        actualRiskIndex < riskValueList.length &&
+        riskValueList.length > 1
       ) {
         riskValueList.splice(actualRiskIndex, 1);
+        return {
+          ...inputRiskIndicator,
+          valueList: riskValueList as RiskIndicatorValues[],
+        };
+      } else if (riskValueList.length === 1) {
+        console.log('Value after');
+        riskValueList.forEach((riskValue) => {
+          console.log(riskValue.values.join(','));
+        });
+        return {
+          ...inputRiskIndicator,
+          valueList: [{ values: [], weight: 0 }] as RiskIndicatorValues[],
+        };
       }
-      return {
-        ...inputRiskIndicator,
-        valueList: riskValueList as RiskIndicatorValues[],
-      };
-    } else {
-      return inputRiskIndicator;
     }
+    return inputRiskIndicator;
   },
   changeUseData: ({ inputRiskIndicator, value }) => {
     const newRiskIndicator = {
@@ -826,6 +768,20 @@ const riskIndicatorFunctionsByOperator: {
     const newRiskIndicator = {
       ...inputRiskIndicator,
       useDateType: value as string,
+    };
+    return updateTimeFilter(newRiskIndicator);
+  },
+  changeUseStartDate: ({ inputRiskIndicator, value }) => {
+    const newRiskIndicator = {
+      ...inputRiskIndicator,
+      useStartDate: value as string,
+    };
+    return updateTimeFilter(newRiskIndicator);
+  },
+  changeUseEndDate: ({ inputRiskIndicator, value }) => {
+    const newRiskIndicator = {
+      ...inputRiskIndicator,
+      useEndDate: value as string,
     };
     return updateTimeFilter(newRiskIndicator);
   },
@@ -953,7 +909,7 @@ const riskIndicatorFunctionsByOperator: {
   },
   changeValueDataAtIndex: ({ inputRiskIndicator, value, listIndex }) => {
     const recordExcludeItemIndex = listIndex ?? -1;
-    const stringListValue = value as string;
+    const values = value as string[];
     const recordExcludeItemsList: RiskIndicatorExcludeItems[] =
       inputRiskIndicator.featureFilter
         ? [...inputRiskIndicator.featureFilter]
@@ -964,10 +920,7 @@ const riskIndicatorFunctionsByOperator: {
         : { field: '', feature: '', values: [], type: '' };
     const newMatchItem: RiskIndicatorExcludeItems = {
       ...matchItem,
-      values:
-        !stringListValue || stringListValue.length === 0
-          ? []
-          : stringListValue.split(', '),
+      values,
     };
     recordExcludeItemsList[recordExcludeItemIndex] =
       newMatchItem as RiskIndicatorExcludeItems;
@@ -1037,10 +990,10 @@ const riskIndicatorFunctionsByOperator: {
       rangeList.length > 0 &&
       recordExcludeItemIndex < rangeList.length
         ? rangeList[recordExcludeItemIndex]
-        : { rangeStart: 0, rangeEnd: 0, weight: 0 };
+        : { rangeStart: '0', rangeEnd: '0', weight: 0 };
     const newMatchItem: RiskIndicatorRangeValues = {
       ...matchItem,
-      rangeStart: parseFloat(value as string) as number,
+      rangeStart: value as string,
     };
     rangeList[recordExcludeItemIndex] =
       newMatchItem as RiskIndicatorRangeValues;
@@ -1064,10 +1017,10 @@ const riskIndicatorFunctionsByOperator: {
       rangeList.length > 0 &&
       recordExcludeItemIndex < rangeList.length
         ? rangeList[recordExcludeItemIndex]
-        : { rangeStart: 0, rangeEnd: 0, weight: 0 };
+        : { rangeStart: '0', rangeEnd: '0', weight: 0 };
     const newMatchItem: RiskIndicatorRangeValues = {
       ...matchItem,
-      rangeEnd: parseFloat(value as string) as number,
+      rangeEnd: value as string,
     };
     rangeList[recordExcludeItemIndex] =
       newMatchItem as RiskIndicatorRangeValues;
@@ -1091,7 +1044,7 @@ const riskIndicatorFunctionsByOperator: {
       rangeList.length > 0 &&
       recordExcludeItemIndex < rangeList.length
         ? rangeList[recordExcludeItemIndex]
-        : { rangeStart: 0, rangeEnd: 0, weight: 0 };
+        : { rangeStart: '0', rangeEnd: '0', weight: 0 };
     const newMatchItem: RiskIndicatorRangeValues = {
       ...matchItem,
       weight: convertScore(value as number),
@@ -1109,8 +1062,8 @@ const riskIndicatorFunctionsByOperator: {
       ? [...inputRiskIndicator.rangeList]
       : [];
     const newMatchItem: RiskIndicatorRangeValues = {
-      rangeStart: 0,
-      rangeEnd: 0,
+      rangeStart: '0',
+      rangeEnd: '0',
       weight: 0,
     };
     rangeList.push(newMatchItem as RiskIndicatorRangeValues);
@@ -1169,36 +1122,51 @@ const riskIndicatorFunctionsByOperator: {
   },
 };
 
-const createNewRiskIndicatorObject: () => RiskIndicatorType =
-  (): RiskIndicatorType => {
-    const newDefaultRiskIndicatorType: RiskIndicatorType = {
-      id: 'NEW',
-      attributeType: 'value',
-      dataSource: 'access',
-      riskField: 'id',
-      name: '',
-      valueList: [{ values: [], weight: 0.0 }],
-      rangeList: undefined,
-      orderList: undefined,
-      featureFilter: undefined,
-    };
-    return newDefaultRiskIndicatorType;
+const createNewRiskIndicatorObject: (
+  dataSource: string,
+  riskField: string
+) => RiskIndicatorType = (dataSource, riskField): RiskIndicatorType => {
+  const inputRiskIndicatorType: RiskIndicatorType = {
+    id: 'NEW',
+    name: '',
+    attributeType: 'value',
   };
+  const newDefaultRiskIndicatorType: RiskIndicatorType = getNewRiskIndicator(
+    inputRiskIndicatorType,
+    'value',
+    dataSource,
+    riskField
+  );
+  return newDefaultRiskIndicatorType;
+};
 
 const buildNewRiskIndicator: (inputArgument: {
   inputRiskIndicator: RiskIndicatorType;
   operation: string;
   value?: string[] | string | number | undefined;
   listIndex: number | undefined;
+  dataSourceId?: string | undefined;
+  riskFieldId?: string | undefined;
+  secondRiskFieldId?: string | undefined;
 }) => RiskIndicatorType = ({
   inputRiskIndicator,
   operation,
   value,
   listIndex,
+  dataSourceId,
+  riskFieldId,
+  secondRiskFieldId,
 }): RiskIndicatorType => {
   const newRiskIndicator: RiskIndicatorType = riskIndicatorFunctionsByOperator[
     operation
-  ]({ inputRiskIndicator, value, listIndex });
+  ]({
+    inputRiskIndicator,
+    value,
+    listIndex,
+    dataSourceId,
+    riskFieldId,
+    secondRiskFieldId,
+  });
   return newRiskIndicator;
 };
 
@@ -1208,11 +1176,22 @@ const attributesSlice = createSlice({
   reducers: {
     riskValueChangeHandler: (state, param) => {
       const { payload } = param;
-      const { id, operation, listIndex, value } = payload as {
+      const {
+        id,
+        operation,
+        listIndex,
+        value,
+        dataSourceId,
+        riskFieldId,
+        secondRiskFieldId,
+      } = payload as {
         id: string;
         value: string;
         operation: string;
         listIndex?: number | undefined;
+        dataSourceId: string | undefined;
+        riskFieldId: string | undefined;
+        secondRiskFieldId: string | undefined;
       };
       if (id && id === 'NEW' && state.newAttribute) {
         const inputRiskIndicator: RiskIndicatorType = state.newAttribute;
@@ -1221,6 +1200,9 @@ const attributesSlice = createSlice({
           operation,
           value,
           listIndex,
+          dataSourceId,
+          riskFieldId,
+          secondRiskFieldId,
         });
         return {
           ...state,
@@ -1234,6 +1216,9 @@ const attributesSlice = createSlice({
           operation,
           value,
           listIndex,
+          dataSourceId,
+          riskFieldId,
+          secondRiskFieldId,
         });
         return {
           ...state,
@@ -1277,13 +1262,26 @@ const attributesSlice = createSlice({
       }
       return state;
     },
-    addNewRiskIndicator: (state) => {
-      const newRiskIndicator: RiskIndicatorType =
-        createNewRiskIndicatorObject();
+    addNewRiskIndicator: (state, param) => {
+      const { payload } = param;
+      const { dataSourceId, riskFieldId } = payload as {
+        dataSourceId: string;
+        riskFieldId: string;
+      };
+      const newRiskIndicator: RiskIndicatorType = createNewRiskIndicatorObject(
+        dataSourceId,
+        riskFieldId
+      );
       return {
         ...state,
         newAttribute: newRiskIndicator,
         currentAttributeId: 'NEW',
+      };
+    },
+    clearAttributeMessage: (state) => {
+      return {
+        ...state,
+        hasDeleteAttributeMessage: false,
       };
     },
   },
@@ -1400,14 +1398,15 @@ const attributesSlice = createSlice({
             state.attributes;
           state.attributes = newAttributes;
           state.currentAttributeId = null;
-          state.isAttributesInitialized = true;
           state.newAttribute = null;
+          state.isAttributesInitialized = true;
           state.status = ResponseStatus.SUCCESS;
         }
       )
       .addCase(deleteAttribute.rejected, (state) => {
         state.loading = false;
         state.isAttributesInitialized = true;
+        state.hasDeleteAttributeMessage = true;
         state.status = ResponseStatus.FAILED;
       });
   },
@@ -1422,6 +1421,26 @@ export const newAttributeSelector = (
   state: RootState
 ): RiskIndicatorType | null => state.attributes.newAttribute;
 
+export const newAttributeDatasourceIdSelector = (
+  state: RootState
+): string | null => state.attributes?.newAttribute?.dataSource ?? null;
+
+export const newAttributeRiskFieldIdSelector = (
+  state: RootState
+): string | null => state.attributes?.newAttribute?.riskField ?? null;
+
+export const newAttributeDatasource2IdSelector = (
+  state: RootState
+): string | null => state.attributes?.newAttribute?.dataSource2 ?? null;
+
+export const newAttributeRiskField2IdSelector = (
+  state: RootState
+): string | null => state.attributes?.newAttribute?.riskField2 ?? null;
+
+export const newAttributeAttributeTypeSelector = (
+  state: RootState
+): string | null => state.attributes?.newAttribute?.attributeType ?? null;
+
 export const attributesByIdSelector = (
   state: RootState
 ): { [id: string]: RiskIndicatorType } => state.attributes?.attributes ?? null;
@@ -1432,6 +1451,36 @@ export const attributeByIdSelector =
   ): ((state: RootState) => RiskIndicatorType | undefined) =>
   (state: RootState) =>
     state.attributes?.attributes && state.attributes?.attributes[attributeId];
+
+export const dataSourceByAttributeIdSelector =
+  (attributeId: string): ((state: RootState) => string) =>
+  (state: RootState) =>
+    state.attributes?.attributes &&
+    (state.attributes?.attributes[attributeId]?.dataSource ?? '');
+
+export const riskFieldByAttributeIdSelector =
+  (attributeId: string): ((state: RootState) => string) =>
+  (state: RootState) =>
+    state.attributes?.attributes &&
+    (state.attributes?.attributes[attributeId]?.riskField ?? '');
+
+export const dataSource2ByAttributeIdSelector =
+  (attributeId: string): ((state: RootState) => string) =>
+  (state: RootState) =>
+    state.attributes?.attributes &&
+    (state.attributes?.attributes[attributeId]?.dataSource2 ?? '');
+
+export const riskField2ByAttributeIdSelector =
+  (attributeId: string): ((state: RootState) => string) =>
+  (state: RootState) =>
+    state.attributes?.attributes &&
+    (state.attributes?.attributes[attributeId]?.riskField2 ?? '');
+
+export const attributeTypeByAttributeIdSelector =
+  (attributeId: string): ((state: RootState) => string) =>
+  (state: RootState) =>
+    state.attributes?.attributes &&
+    (state.attributes?.attributes[attributeId]?.attributeType ?? '');
 
 export const attributeNameByIdSelector =
   (attributeId: string): ((state: RootState) => string | undefined) =>
@@ -1471,9 +1520,14 @@ export const getAttributeDataSourceIdSelector =
     return currentAttribute?.dataSource ?? '';
   };
 
+export const getHasDeleteAttributeMessage = (state: RootState): boolean => {
+  return state.attributes?.hasDeleteAttributeMessage ?? false;
+};
+
 export const {
   riskValueChangeHandler,
   riskValueClickHandler,
   addNewRiskIndicator,
+  clearAttributeMessage,
 } = attributesSlice.actions;
 export default attributesSlice.reducer;

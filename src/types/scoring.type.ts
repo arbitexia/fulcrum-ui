@@ -6,7 +6,7 @@
 /**
  * Author: Diego Martinez
  */
-import { Entity, PropertyType } from '@/types/entity.type';
+import { Entity, PropertyType, ScoringDetailsJson } from '@/types/entity.type';
 
 export type BasisPropertyType = PropertyType;
 
@@ -15,6 +15,8 @@ export type Attribute = {
   type: string;
   weight: number;
   score: number;
+  scoringDetailsJsonString?: string;
+  scoringDetailsJson?: ScoringDetailsJson;
   attributes?: Attributes;
 };
 
@@ -31,7 +33,7 @@ export type ScoreRankingResponse = {
 };
 
 export type ScoringRankingResult = {
-  entity: number;
+  entity: string;
   ranking: string;
 };
 
@@ -74,6 +76,30 @@ export type EntityRanking = {
   scoringResult: ScoringResult;
 };
 
+export type HistoricalRankingBackend = {
+  entity: string;
+  scoringInstance: number;
+  ranking: string;
+};
+
+export type HistoricalRanking = {
+  entity?: string | null;
+  scoringInstance?: number | null;
+  ranking?: ScoringResult | null;
+  next?: HistoricalRanking | null;
+  prev?: HistoricalRanking | null;
+};
+
+export type HistoricalRankingDisplay = {
+  [dateString: string]: HistoricalRanking[];
+};
+
+export type HistoricalRankingResult = {
+  entityId: string;
+  modelId: string;
+  historicalRanking: HistoricalRankingBackend[];
+};
+
 export type BarChartDataSet = {
   label: string;
   data: number[];
@@ -85,28 +111,36 @@ export type BarChartDataSets = BarChartDataSet[];
 
 export type RetrieveScoringParams = {
   accessToken: string;
-  requestType: string;
+  requestType?: string;
   modelId: string;
   modelInstance: number;
   cursor: string;
   pageNumber: number;
   limit: number;
+  categories?: string[];
 };
 
 export type RetrieveScoringCountParams = {
   accessToken: string;
-  requestType: string;
+  requestType?: string;
   modelId: string;
   modelInstance: number;
   cursor: string;
   pageNumber: number;
   limit: number;
+  categories?: string[];
 };
 
 export type RetrieveScoresForEntityParams = {
   accessToken: string;
   modelId: string;
   modelInstance: number;
+  entityId: string;
+};
+
+export type RetrieveHistoricalScoreDataForEntityParams = {
+  accessToken: string;
+  modelId: string;
   entityId: string;
 };
 
@@ -119,6 +153,7 @@ export type RetrieveBasisParams = {
   cursor: string;
   pageNumber: number;
   limit: number;
+  unmaskToken: string;
 };
 
 export type RetrieveBasisCountParams = {
@@ -130,6 +165,7 @@ export type RetrieveBasisCountParams = {
   cursor: string;
   pageNumber: number;
   limit: number;
+  unmaskToken: string;
 };
 
 export type RetrieveBasisOutParams = {

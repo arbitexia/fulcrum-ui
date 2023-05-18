@@ -109,24 +109,29 @@ const peerChartDataSetsSelector = (state: RootState): BarChartDataSets => {
   peerData.forEach((entity: PeerDataType) => {
     const { minimum, max, average, individual } = entity;
     if (!('Peer Minimum Score' in barchartGroupDictionary)) {
-      barchartGroupDictionary['Peer Minimum Score'] = [parseInt(minimum)];
+      barchartGroupDictionary['Peer Minimum Score'] = [minimum];
       backGroundColors['Peer Minimum Score'] = '#EDA200';
-    } else
-      barchartGroupDictionary['Peer Minimum Score'].push(parseInt(minimum));
+    } else {
+      barchartGroupDictionary['Peer Minimum Score'].push(minimum);
+    }
     if (!('Peer Average Score' in barchartGroupDictionary)) {
-      barchartGroupDictionary['Peer Average Score'] = [parseInt(average)];
+      barchartGroupDictionary['Peer Average Score'] = [average];
       backGroundColors['Peer Average Score'] = '#75AC00';
-    } else
-      barchartGroupDictionary['Peer Average Score'].push(parseInt(average));
-    if (!('Individual’s Score' in barchartGroupDictionary)) {
-      barchartGroupDictionary["Individual's Score"] = [parseInt(individual)];
+    } else {
+      barchartGroupDictionary['Peer Average Score'].push(average);
+    }
+    if (!("Individual's Score" in barchartGroupDictionary)) {
+      barchartGroupDictionary["Individual's Score"] = [individual];
       backGroundColors["Individual's Score"] = '#0050BE';
-    } else
-      barchartGroupDictionary["Individual's Score"].push(parseInt(individual));
+    } else {
+      barchartGroupDictionary["Individual's Score"].push(individual);
+    }
     if (!('Peer Max Score' in barchartGroupDictionary)) {
-      barchartGroupDictionary['Peer Max Score'] = [parseInt(max)];
+      barchartGroupDictionary['Peer Max Score'] = [max];
       backGroundColors['Peer Max Score'] = '#C62828';
-    } else barchartGroupDictionary['Peer Max Score'].push(parseInt(max));
+    } else {
+      barchartGroupDictionary['Peer Max Score'].push(max);
+    }
   });
   return Object.entries(barchartGroupDictionary).map(([label, data]) => {
     const backgroundColor = backGroundColors[label];
@@ -143,7 +148,7 @@ const peerChartDataSetsSelector = (state: RootState): BarChartDataSets => {
 export const peerChartDataSelector = (
   state: RootState
 ): ChartData<
-  'line',
+  'bar',
   (number | ScatterDataPoint | BubbleDataPoint | null)[]
 > => ({
   labels: peerChartLabelsSelector(state),

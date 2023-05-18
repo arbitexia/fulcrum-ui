@@ -11,51 +11,11 @@ import {
   Title,
   Tooltip,
   Legend,
-  ChartData,
-  ScatterDataPoint,
-  BubbleDataPoint,
+  TooltipItem,
 } from 'chart.js';
 import { _DeepPartialObject } from 'chart.js/types/utils';
-import { StateCardItemType } from '@/types';
 
 ChartJS.register(Title, Tooltip, Legend);
-
-export const homeStatusCards: StateCardItemType[] = [
-  {
-    title: 'Total Persons',
-    amount: '31,203',
-    info: '1',
-    icon: '/images/icons/up.svg',
-  },
-  {
-    title: 'Data Sources',
-    amount: '15',
-    info: '1',
-    icon: '/images/icons/up.svg',
-  },
-  {
-    title: '# Risk Indicators',
-    amount: '46',
-    info: '3',
-    icon: '/images/icons/up.svg',
-  },
-  {
-    title: 'Record Analyzed',
-    amount: '5.1M',
-    info: '12K',
-    icon: '/images/icons/up.svg',
-  },
-  {
-    title: 'Leads Reviewed',
-    amount: '126',
-    info: 'in the last year',
-  },
-  {
-    title: 'Cases Opened',
-    amount: '12',
-    info: 'in the last year',
-  },
-];
 
 export const modelList = {
   label: 'Model Name',
@@ -72,9 +32,20 @@ export const modelList = {
 export const rankList = {
   label: 'Rank By',
   items: [
-    { id: 1, name: 'Number of Indicators' },
-    { id: 2, name: 'Increases in last 90 days' },
-    { id: 3, name: 'Variations from Peers' },
+    { id: 1, name: 'Weighted Risk Scores' },
+    { id: 2, name: 'Number of Indicators' },
+    { id: 3, name: 'Increases in last 90 days' },
+    { id: 4, name: 'Variations from Peers' },
+  ],
+};
+
+export const analysts = {
+  label: 'Analyst Name',
+  items: [
+    { id: 1, name: 'Diego Martinez' },
+    { id: 2, name: 'Ollie Luba' },
+    { id: 3, name: 'Kevin Homa' },
+    { id: 4, name: 'James Burnham' },
   ],
 };
 
@@ -93,17 +64,35 @@ export const barChartOptions: _DeepPartialObject<unknown> = {
     legend: {
       display: false,
     },
+    tooltip: {
+      callbacks: {
+        label: (tooltipItem: TooltipItem<'bar'>) => {
+          const { y } = tooltipItem.parsed;
+          return Math.round(y);
+        },
+        title: (_toolTipItem: TooltipItem<'bar'>) => {
+          return;
+        },
+      },
+    },
   },
   responsive: true,
   barThickness: 15,
   scales: {
     x: {
+      title: {
+        display: true,
+        color: '#7C909B',
+        fontSize: '14px',
+        text: 'Persons of Concern',
+      },
       stacked: true,
       grid: {
         display: false,
         drawBorder: false,
       },
       ticks: {
+        display: false,
         // showLabelBackdrop: true,
         // backdropColor: 'red',
         // color: 'white',
@@ -131,20 +120,6 @@ export const barChartOptions: _DeepPartialObject<unknown> = {
   },
 };
 
-export const doughnutChartData: ChartData<
-  'doughnut',
-  (number | ScatterDataPoint | BubbleDataPoint | null)[]
-> = {
-  labels: ['Green', 'Gray'],
-  datasets: [
-    {
-      data: [100, 300],
-      backgroundColor: ['#3fc43b', '#d3d3d3'],
-      hoverBackgroundColor: ['#3fc43b', '#d3d3d3'],
-    },
-  ],
-};
-
 export const doughnutChartOptions: _DeepPartialObject<unknown> = {
   plugins: {
     legend: {
@@ -161,17 +136,6 @@ export const doughnutChartOptions: _DeepPartialObject<unknown> = {
 export const justificationList = [
   {
     title: 'High Risk Score',
-    items: [
-      {
-        title: 'Score 1',
-      },
-      {
-        title: 'Score 2',
-      },
-      {
-        title: 'Score 3',
-      },
-    ],
   },
   {
     title: 'Report from Manager',

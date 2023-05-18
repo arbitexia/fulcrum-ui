@@ -7,7 +7,7 @@
  * Author: Diego Martinez
  */
 import React from 'react';
-import { styled, Box, Tabs, BoxProps, useTheme } from '@mui/material';
+import { styled, Box, Tabs, BoxProps } from '@mui/material';
 
 export const UIAppLayoutWrapper = styled(Box)({
   width: '100%',
@@ -29,15 +29,13 @@ export const UITabWrapper = ({
   onChange,
   ...rest
 }: UITabWrapperProps): JSX.Element => {
-  const theme = useTheme();
-
   return (
     <Box
       {...rest}
       sx={{
         borderBottom: noBorder ? 0 : 1,
         '.MuiTabs-root': {
-          marginTop: theme.spacing(2),
+          marginTop: 0,
           minHeight: '30px',
         },
         '.MuiTabs-scroller': {
@@ -55,19 +53,21 @@ export const UITabWrapper = ({
         variant="fullWidth"
         sx={{
           '.MuiTab-root': {
-            alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             textTransform: 'Capitalize',
             flexGrow: 0,
             flexDirection: 'row',
-            minHeight: '31px',
             fontWeight: 400,
             color: '#504F54',
             fontSize: '14px',
-            minWidth: '164px',
-            paddingLeft: theme.spacing(5),
+            minWidth: '150px',
             '&:nth-of-type(1)': {
               marginLeft: 0,
+              paddingLeft: 0,
+              minWidth: '75px',
+            },
+            '&:nth-of-type(3)': {
+              minWidth: '100px',
             },
             '&.Mui-selected': {
               fontWeight: 700,
@@ -78,8 +78,8 @@ export const UITabWrapper = ({
             },
           },
           svg: {
-            marginRight: '5px',
-            marginBottom: '0px !important',
+            marginRight: 0,
+            marginBottom: 0,
             fontSize: '21px',
           },
         }}

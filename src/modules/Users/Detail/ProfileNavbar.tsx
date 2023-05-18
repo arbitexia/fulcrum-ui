@@ -22,18 +22,18 @@ import { Entity } from '@/types/entity.type';
 import { SlidelineModal } from './SlidelineModal';
 import { CommentModal } from './CommentModal';
 import { ActionModal } from './ActionModal';
-import { rankList } from '@/_mock';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import {
-  geEntityStatusValues,
-  getAccessToken,
+  entityPropertiesByIdSelector,
+  getEntityStatusValues,
   getEntitiesConfigInitialized,
-  getIsCommentsInitialized,
   getStatusForEntityId,
 } from '@/redux/slices';
 import { getStatusColor, StatusDict } from '@/libs/color-generator';
 import { SelectChangeEvent } from '@mui/material/Select/SelectInput';
-import { newEntityStatus } from '@/redux/slices/entity.slice';
+import { newEntityStatus, NOT_AVAILABLE } from '@/redux/slices/entity.slice';
+import { UIFlexEndBox } from '@/components/UI/Box';
+import { analysts } from '@/_mock/home.mock';
 
 const StyledTypography = styled(Typography)({
   fontWeight: '400',
@@ -44,30 +44,33 @@ const StyledTypography = styled(Typography)({
 
 const UserDetailNavbar = ({
   entity,
+  accessToken = null,
 }: {
   entity: Entity | null;
+  accessToken: string | null;
 }): JSX.Element => {
   const dispatch = useAppDispatch();
-  const entityId: string | null = entity?.entityId.toString() ?? null;
-  const stateAccessToken = useAppSelector(getAccessToken);
-  const statusList = useAppSelector(geEntityStatusValues);
+  const entityId: string | null = entity?.entityId ?? null;
+  const entityProperties = useAppSelector(
+    entityPropertiesByIdSelector(entityId ?? '')
+  );
+  const statusList = useAppSelector(getEntityStatusValues);
   const configIsInitialized = useAppSelector(getEntitiesConfigInitialized);
-  const entityCommentsIsInitialized = useAppSelector(getIsCommentsInitialized);
   const entityStatus = useAppSelector(getStatusForEntityId(entityId as string));
   const [onSlideline, setOnSlideline] = useState<boolean>(false);
   const [openSlideSetting, setOpenSlideSetting] = useState<boolean>(false);
   const [openComment, setOpenComment] = useState<boolean>(false);
   const [openAction, setOpenAction] = useState<boolean>(false);
-  const missingNamePlaceHolder = '[MASKED]';
+  const missingNamePlaceHolder = NOT_AVAILABLE;
 
   const handleSelectChange = (event: SelectChangeEvent<unknown>): void => {
     const statusValue = (event.target.value as string) || null;
-    if (statusValue && stateAccessToken && entityId) {
+    if (statusValue && accessToken && entityId) {
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         newEntityStatus({
-          accessToken: stateAccessToken,
+          accessToken,
           entityId,
           entityStatus: statusValue,
           author: 'Diego Martinez',
@@ -78,7 +81,7 @@ const UserDetailNavbar = ({
   };
 
   return (
-    <UIContainer>
+    <UIContainer disableGutters sx={{ padding: '8px 8px 8px 24px' }}>
       <UIFlexSpaceBox
         sx={{
           alignItems: 'flex-end',
@@ -87,162 +90,173 @@ const UserDetailNavbar = ({
         }}
       >
         <UIFlexSpaceBox>
-          <Tooltip title={entity?.properties?.name ?? missingNamePlaceHolder}>
-            <Typography
-              noWrap
-              sx={{
-                mr: 4,
-                fontWeight: 700,
-                fontSize: '32px',
-                lineHeight: '32px',
-                textAlign: 'center',
-                letterSpacing: '0.2px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                maxWidth: '300px',
-              }}
-            >
-              {entity?.properties?.name ?? missingNamePlaceHolder}
-            </Typography>
-          </Tooltip>
-        </UIFlexSpaceBox>
-        {entityId && configIsInitialized && (
-          <UIFlexSpaceBox sx={{ gap: 6 }}>
-            <UIFlexSpaceBox>
-              <StyledTypography>Status</StyledTypography>
-              <UISelectBox
-                id="demo-simple-select-helper"
-                defaultValue={statusList.default}
-                value={entityStatus ?? statusList.default}
-                label="status"
-                onChange={handleSelectChange}
-                width="140px"
-                height="36px"
-              >
-                {statusList.values.map((item, index) => {
-                  const colorPair = getStatusColor(
-                    item as keyof StatusDict,
-                    statusList.default
-                  );
-                  return (
-                    <UISelectItem
-                      key={index}
-                      value={item as string}
-                      sx={{ minWidth: '140px' }}
-                    >
-                      <Chip
-                        label={item as string}
-                        sx={{
-                          color: colorPair.textColor,
-                          background: colorPair.bgColor,
-                          borderRadius: '4px',
-                          width: '105px',
-                          height: '24px',
-                          justifyContent: 'flex-start',
-                        }}
-                      />
-                    </UISelectItem>
-                  );
-                })}
-              </UISelectBox>
-            </UIFlexSpaceBox>
-            <UIFlexCenterBox>
-              <StyledTypography>Sideline</StyledTypography>
-              <UIFlexCenterBox
+          {entityProperties && (
+            <Tooltip title={entityProperties?.name ?? missingNamePlaceHolder}>
+              <Typography
+                noWrap
                 sx={{
-                  width: '55px',
-                  height: '36px',
-                  background: '#FFFFFF',
-                  border: '1px solid #D0D8DC',
-                  borderRadius: '6px',
+                  mr: 4,
+                  fontWeight: 700,
+                  fontSize: '32px',
+                  lineHeight: '32px',
+                  textAlign: 'center',
+                  letterSpacing: '0.2px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '300px',
                 }}
               >
-                <Chip
-                  label={onSlideline ? 'On' : 'Off'}
-                  onClick={() => {
-                    onSlideline
-                      ? setOnSlideline(false)
-                      : setOpenSlideSetting(true);
-                  }}
+                {entityProperties?.name ?? missingNamePlaceHolder}
+              </Typography>
+            </Tooltip>
+          )}
+        </UIFlexSpaceBox>
+        <UIFlexEndBox>
+          {entityId && configIsInitialized && (
+            <UIFlexSpaceBox sx={{ gap: 1 }}>
+              <UIFlexEndBox>
+                <StyledTypography>Status</StyledTypography>
+                <UISelectBox
+                  id="demo-simple-select-helper"
+                  defaultValue={statusList.default}
+                  value={entityStatus ?? statusList.default}
+                  label="status"
+                  onChange={handleSelectChange}
+                  width="210px"
+                  height="36px"
+                >
+                  {statusList.values.map((item, index) => {
+                    const colorPair = getStatusColor(
+                      item as keyof StatusDict,
+                      statusList.default
+                    );
+                    return (
+                      <UISelectItem
+                        key={index}
+                        value={item as string}
+                        sx={{ minWidth: '210px' }}
+                      >
+                        <Chip
+                          label={item as string}
+                          sx={{
+                            color: colorPair.textColor,
+                            background: colorPair.bgColor,
+                            borderRadius: '4px',
+                            width: '157px',
+                            height: '24px',
+                            justifyContent: 'flex-start',
+                          }}
+                        />
+                      </UISelectItem>
+                    );
+                  })}
+                </UISelectBox>
+              </UIFlexEndBox>
+              <UIFlexCenterBox>
+                <StyledTypography>Sideline</StyledTypography>
+                <UIFlexCenterBox
                   sx={{
-                    color: '#586D79',
-                    background: onSlideline ? '#FFC107' : '#ECEFF1',
-                    width: '42px',
-                    height: '24px',
-                    borderRadius: '4px',
+                    width: '55px',
+                    height: '36px',
+                    background: '#FFFFFF',
+                    border: '1px solid #D0D8DC',
+                    borderRadius: '6px',
                   }}
-                />
+                >
+                  <Chip
+                    label={onSlideline ? 'On' : 'Off'}
+                    onClick={() => {
+                      onSlideline
+                        ? setOnSlideline(false)
+                        : setOpenSlideSetting(true);
+                    }}
+                    sx={{
+                      color: '#586D79',
+                      background: onSlideline ? '#FFC107' : '#ECEFF1',
+                      width: '42px',
+                      height: '24px',
+                      borderRadius: '4px',
+                    }}
+                  />
+                </UIFlexCenterBox>
               </UIFlexCenterBox>
-            </UIFlexCenterBox>
-          </UIFlexSpaceBox>
-        )}
-        <UIFlexSpaceBox sx={{ gap: 4, alignItems: 'flex-end' }}>
-          <UIFlexSpaceBox>
-            <StyledTypography>Assigned Analyst</StyledTypography>
-            <UISelect
-              value={1}
-              itemList={rankList.items}
-              handleChange={() => {
-                console.log('Analyst Clicked');
-              }}
-              label=""
-              height="36px"
-            />
-          </UIFlexSpaceBox>
+            </UIFlexSpaceBox>
+          )}
+          <UIFlexSpaceBox sx={{ alignItems: 'flex-end' }}>
+            <UIFlexSpaceBox>
+              <StyledTypography>Assigned Analyst</StyledTypography>
+              <UISelect
+                value={1}
+                itemList={analysts.items}
+                handleChange={() => {
+                  console.log('Analyst Clicked');
+                }}
+                label=""
+                height="36px"
+              />
+            </UIFlexSpaceBox>
 
-          <IconButton sx={{ padding: 0 }}>
-            <Image
-              src={'images/icons/pdf.svg'}
-              loader={appImageLoader}
-              width={24}
-              height={30}
-              alt="pdf"
-            />
-          </IconButton>
-          {entityId && entityCommentsIsInitialized && (
-            <IconButton
-              onClick={() => setOpenComment(true)}
-              sx={{ padding: 0 }}
-            >
+            <IconButton sx={{ padding: 0 }}>
               <Image
-                src={'images/icons/comment.svg'}
+                src={'images/icons/pdf.svg'}
                 loader={appImageLoader}
                 width={24}
                 height={30}
-                alt="comment"
+                alt="pdf"
               />
             </IconButton>
-          )}
-          <IconButton onClick={() => setOpenAction(true)} sx={{ padding: 0 }}>
-            <Image
-              src={'images/icons/action.svg'}
-              loader={appImageLoader}
-              width={24}
-              height={30}
-              alt="action"
-            />
-          </IconButton>
-        </UIFlexSpaceBox>
+            {entityId && (
+              <IconButton
+                onClick={() => setOpenComment(true)}
+                sx={{ padding: 0 }}
+              >
+                <Image
+                  src={'images/icons/comment.svg'}
+                  loader={appImageLoader}
+                  width={24}
+                  height={30}
+                  alt="comment"
+                />
+              </IconButton>
+            )}
+            <IconButton onClick={() => setOpenAction(true)} sx={{ padding: 0 }}>
+              <Image
+                src={'images/icons/action.svg'}
+                loader={appImageLoader}
+                width={24}
+                height={30}
+                alt="action"
+              />
+            </IconButton>
+          </UIFlexSpaceBox>
+        </UIFlexEndBox>
       </UIFlexSpaceBox>
       <SlidelineModal
         open={openSlideSetting}
         onClose={() => {
-          setOnSlideline(!onSlideline);
           setOpenSlideSetting(false);
         }}
+        onUpdate={() => {
+          setOnSlideline(!onSlideline);
+        }}
       />
-      {entityId && entityCommentsIsInitialized && (
+      {entityId && accessToken && (
         <CommentModal
           open={openComment}
           onClose={() => setOpenComment(false)}
           entityId={entityId}
+          accessToken={accessToken}
         />
       )}
-      <ActionModal
-        open={openAction}
-        onClose={() => setOpenAction(false)}
-        entityName={entity?.properties?.name ?? missingNamePlaceHolder}
-      />
+      {entityProperties && (
+        <ActionModal
+          open={openAction}
+          onClose={() => setOpenAction(false)}
+          entityName={
+            (entityProperties?.name ?? missingNamePlaceHolder) as string
+          }
+        />
+      )}
     </UIContainer>
   );
 };

@@ -6,38 +6,40 @@
 /**
  * Author: Diego Martinez
  */
-import React, { ChangeEvent, useState } from 'react';
-import { Typography } from '@mui/material';
-import { AppLayout } from '@/layouts';
-import { useAppDispatch } from '@/hooks';
-import { UIFlexSpaceBox } from '@/components/UI';
-import { CustomThemeSwitch } from '@/components/Custom';
-import { toggleThemeMode } from '@/redux/slices';
-import { useAppToast } from '@/providers';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
+import config from '@/config';
+import { useCookies } from 'react-cookie';
+import { noop } from 'lodash';
+import { LinearProgress } from '@mui/material';
+
+const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
 const Home = (): JSX.Element => {
-  const appToast = useAppToast();
-  const dispatch = useAppDispatch();
-  const [checked, setChecked] = useState<boolean>(true);
-
-  const handleThemeChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setChecked(e.target.checked);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    dispatch(toggleThemeMode());
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    appToast({ severity: 'success', message: 'App Theme Mode Changed' });
+  const router = useRouter();
+  const [cookies] = useCookies(['accessToken']);
+  const { accessToken: cookieAccessToken = null } = cookies as {
+    accessToken?: string | null;
   };
+  const { isReady } = router as {
+    query: { accessToken?: string | null };
+    isReady: boolean;
+  };
+  useEffect(() => {
+    if (isReady) {
+      if (!cookieAccessToken) {
+        router
+          .push(
+            `${baseAuthenticationUrl}/login/${config.AUTHENTICATION_SERVICE}`
+          )
+          .then(noop);
+      } else {
+        router.push(`/home`);
+      }
+    }
+  }, [isReady, cookieAccessToken, router]);
 
-  return (
-    <AppLayout title="Home">
-      <UIFlexSpaceBox>
-        <Typography variant="h5">Home</Typography>
-        <CustomThemeSwitch checked={checked} onChange={handleThemeChange} />
-      </UIFlexSpaceBox>
-    </AppLayout>
-  );
+  return <LinearProgress />;
 };
 
 export default Home;

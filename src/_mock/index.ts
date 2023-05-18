@@ -7,12 +7,10 @@
  * Author: Diego Martinez
  */
 export {
-  homeStatusCards,
   modelList,
   rankList,
   populationList,
   barChartOptions,
-  doughnutChartData,
   doughnutChartOptions,
   justificationList,
 } from './home.mock';
@@ -22,7 +20,6 @@ export {
   riskTableData,
   riskCollapseData,
   basisTableData,
-  timeLineData,
 } from './profile.mock';
 
 export {
@@ -35,8 +32,8 @@ export {
   individualList,
   modelsCategoryList,
   riskIndicatorsTableData,
-  listsTableData,
   filtersTableData,
+  filterFieldData,
   filterOptionData,
   riskTypeData,
   behaviorData,
@@ -46,10 +43,11 @@ export {
   dateData,
   riskSingleRecordTableData,
   emailData,
-  riskHistoricalTableData,
   outlierGeneralTimePeriods,
   outlierScoringTypes,
   outlierTimePeriods,
   outlierTimeUnits,
   outlierHours,
 } from './models.mock';
+
+export { peerCompareData } from './entity.mock';

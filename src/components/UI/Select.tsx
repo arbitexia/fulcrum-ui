@@ -53,7 +53,7 @@ export const UISelectItem = styled(MenuItem, {
 })<UISelectItemProps>(({ textColor }) => ({
   fontWeight: 400,
   fontSize: '14px',
-  lineHeight: '32px',
+  lineHeight: '16px',
   color: textColor || '#39474E',
 }));
 

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "prepare": "husky install",
@@ -33,6 +33,7 @@
     "jwt-decode": "^3.1.2",
     "loader-utils": "2.0.4",
     "lodash": "^4.17.21",
+    "moment": "^2.29.4",
     "next": "12.2.4",
     "next-images": "^1.8.4",
     "next-redux-wrapper": "^7.0.5",

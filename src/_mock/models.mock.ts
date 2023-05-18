@@ -12,7 +12,6 @@ import {
   ModelsCategoryDataType,
   FiltersTableDataType,
   RiskSingleRecordDataType,
-  RiskHistoricalTableDataType,
   FiltersDataType,
 } from '@/types';
 import {
@@ -29,7 +28,7 @@ const createModelTableData = (
   name: string,
   description: string,
   owner: string,
-  lastUpdate: string,
+  lastUpdate: number,
   status = '',
   items: FiltersDataType[] = []
 ): ModelsTableDataType => {
@@ -204,155 +203,34 @@ export const riskIndicatorsTableData: FiltersTableDataType[] = [
   ),
 ];
 
-export const listsTableData: ModelsTableDataType[] = [
-  createModelTableData(
-    1,
-    '@Countries of Concern',
-    'Source: OFAC - Office of Foreign Assets Control',
-    'John Thomas',
-    '05/01/22 12:23 PM',
-    '',
-    [
-      { id: 1, operator: 2, resource: 2, field: 2, filter: 1, key: 'Balkans' },
-      { id: 2, operator: 2, resource: 2, field: 2, filter: 2, key: 'Serbia' },
-      { id: 3, operator: 2, resource: 2, field: 2, filter: 3, key: 'Albania' },
-      { id: 4, operator: 2, resource: 2, field: 2, filter: 4, key: 'Bosnia' },
-      { id: 5, operator: 2, resource: 2, field: 2, filter: 5, key: 'Croatia' },
-      {
-        id: 6,
-        operator: 2,
-        resource: 2,
-        field: 2,
-        filter: 6,
-        key: 'Macedonia',
-      },
-      { id: 7, operator: 2, resource: 2, field: 2, filter: 7, key: 'Kosovo' },
-      { id: 8, operator: 2, resource: 2, field: 2, filter: 8, key: 'Belarus' },
-      { id: 9, operator: 2, resource: 2, field: 2, filter: 9, key: 'Burundi' },
-      {
-        id: 10,
-        operator: 2,
-        resource: 2,
-        field: 2,
-        filter: 10,
-        key: 'Central African Republic',
-      },
-      { id: 11, operator: 2, resource: 2, field: 2, filter: 11, key: 'Crimea' },
-      { id: 12, operator: 2, resource: 2, field: 2, filter: 12, key: 'Cuba' },
-      {
-        id: 13,
-        operator: 2,
-        resource: 2,
-        field: 2,
-        filter: 13,
-        key: '*Congo*',
-      },
-      { id: 14, operator: 2, resource: 2, field: 2, filter: 14, key: 'Iran' },
-      { id: 15, operator: 2, resource: 2, field: 2, filter: 15, key: 'Iraq' },
-      {
-        id: 16,
-        operator: 2,
-        resource: 2,
-        field: 2,
-        filter: 16,
-        key: 'Lebanon',
-      },
-      { id: 17, operator: 2, resource: 2, field: 2, filter: 17, key: 'Libya' },
-      {
-        id: 18,
-        operator: 2,
-        resource: 2,
-        field: 2,
-        filter: 18,
-        key: 'North Korea',
-      },
-      {
-        id: 19,
-        operator: 2,
-        resource: 2,
-        field: 2,
-        filter: 19,
-        key: 'Somalia',
-      },
-      { id: 20, operator: 2, resource: 2, field: 2, filter: 20, key: 'Sudan' },
-      { id: 21, operator: 2, resource: 2, field: 2, filter: 21, key: 'Syria' },
-      {
-        id: 22,
-        operator: 2,
-        resource: 2,
-        field: 2,
-        filter: 22,
-        key: 'Venezuela',
-      },
-      { id: 23, operator: 2, resource: 2, field: 2, filter: 23, key: 'Yemen' },
-      {
-        id: 24,
-        operator: 2,
-        resource: 2,
-        field: 2,
-        filter: 24,
-        key: 'Zimbabwe',
-      },
-    ]
-  ),
-  createModelTableData(
-    2,
-    '@Universities with Military ties',
-    'Source: unitracker.aspi.org.au',
-    'John Thomas',
-    '04/01/22 12:23 PM'
-  ),
-  createModelTableData(
-    3,
-    '@Weekend Dates',
-    'List of weekend dates',
-    'Admin',
-    '04/01/22 12:23 PM'
-  ),
-  createModelTableData(
-    4,
-    '@Concerning Keywords',
-    'Dictionary of negative words - Source: AFINN-165',
-    'Mary Williams',
-    '03/01/22 12:23 PM'
-  ),
-  createModelTableData(
-    5,
-    '@Competitor e-mail domains',
-    'Competitor e-mail domains',
-    'Mary Williams',
-    '03/01/22  3:23 PM'
-  ),
-];
-
 export const filtersTableData: ModelsTableDataType[] = [
   createModelTableData(
     1,
     'Active Employees Only',
     'Filters out non-Active Employees',
     'John Thomas',
-    '05/01/22 12:23 PM'
+    new Date('05/01/22 12:23 PM').getUTCMilliseconds()
   ),
   createModelTableData(
     2,
     'US-only Employees',
     'Filters out non-US employees',
     'John Thomas',
-    '04/01/22 12:23 PM'
+    new Date('04/01/22 12:23 PM').getUTCMilliseconds()
   ),
   createModelTableData(
     3,
     'Contractors Only',
     'Filters out non-Contractors',
     'Melanie Rogers',
-    '04/01/22 12:23 PM'
+    new Date('04/01/22 12:23 PM').getUTCMilliseconds()
   ),
   createModelTableData(
     4,
     'Engineers in Omaha',
     'Includes only individuals with “Engineer” in title and Location in Omaha',
     'Mary Williams',
-    '03/01/22 12:23 PM',
+    new Date('03/01/22 12:23 PM').getUTCMilliseconds(),
     '',
     [
       {
@@ -467,91 +345,14 @@ export const externalAppDescriptionData: { [id: string]: string } = {
   sm: 'Social Media Data Collection',
 };
 
-export const resourceData = [
-  { id: 'access', name: 'Access' },
-  { id: 'hr', name: 'Human Resources' },
-  { id: 'device', name: 'Device alerts' },
-  { id: 'logon', name: 'Logon' },
-  { id: 'http', name: 'HTTP' },
-  { id: 'ldap', name: 'LDAP' },
-  { id: 'email', name: 'Email' },
-  { id: 'file', name: 'File' },
-  { id: 'relationships', name: 'Relationships' },
+export const filterFieldData: UISelectInterface[] = [
+  { id: 1, name: 'Job Title' },
+  { id: 2, name: 'Location' },
+  { id: 3, name: 'Business Unit' },
+  { id: 4, name: 'Clearance' },
+  { id: 5, name: 'Employee Status' },
 ];
-export const fieldData: { [dataSourceId: string]: UISelectInterface[] } = {
-  access: [
-    { id: 'id', name: 'ID' },
-    { id: 'system', name: 'System' },
-    { id: 'timestamp', name: 'Timestamp' },
-  ],
-  hr: [
-    { id: 'id', name: 'ID' },
-    { id: 'name', name: 'Name' },
-    { id: 'timestamp', name: 'Timestamp' },
-  ],
-  device: [
-    { id: 'id', name: 'ID' },
-    { id: 'date', name: 'Date' },
-    { id: 'user', name: 'User' },
-    { id: 'pc', name: 'PC' },
-    { id: 'file_tree', name: 'File Tree' },
-    { id: 'activity', name: 'Activity' },
-  ],
-  logon: [
-    { id: 'id', name: 'ID' },
-    { id: 'date', name: 'Date' },
-    { id: 'user', name: 'User' },
-    { id: 'pc', name: 'PC' },
-    { id: 'activity', name: 'Activity' },
-  ],
-  http: [
-    { id: 'id', name: 'ID' },
-    { id: 'date', name: 'Date' },
-    { id: 'user', name: 'User' },
-    { id: 'pc', name: 'PC' },
-    { id: 'url', name: 'URL' },
-    { id: 'activity', name: 'Activity' },
-    { id: 'content', name: 'Content' },
-  ],
-  ldap: [
-    { id: 'name', name: 'Name' },
-    { id: 'id', name: 'ID' },
-    { id: 'email', name: 'EMail' },
-    { id: 'role', name: 'Role' },
-    { id: 'projects', name: 'Projects' },
-    { id: 'business_unit', name: 'Business Unit' },
-    { id: 'professional_unit', name: 'Professional Unit' },
-    { id: 'functional_unit', name: 'Functional Unit' },
-    { id: 'department', name: 'Department' },
-    { id: 'team', name: 'Team' },
-    { id: 'supervisor', name: 'Supervisor' },
-  ],
-  email: [
-    { id: 'id', name: 'ID' },
-    { id: 'date', name: 'Date' },
-    { id: 'user', name: 'User' },
-    { id: 'pc', name: 'PC' },
-    { id: 'to', name: 'To' },
-    { id: 'cc', name: 'CC' },
-    { id: 'bcc', name: 'BCC' },
-    { id: 'from', name: 'From' },
-    { id: 'activity', name: 'Activity' },
-    { id: 'size', name: 'Size' },
-    { id: 'attachments', name: 'Attachments' },
-    { id: 'content', name: 'Content' },
-  ],
-  file: [
-    { id: 'id', name: 'ID' },
-    { id: 'date', name: 'Date' },
-    { id: 'user', name: 'User' },
-    { id: 'pc', name: 'PC' },
-    { id: 'filename', name: 'Filename' },
-    { id: 'activity', name: 'Activity' },
-    { id: 'to_removable_media', name: 'To Removable Media' },
-    { id: 'from_removable_media', name: 'From Removable Media' },
-    { id: 'content', name: 'Content' },
-  ],
-};
+
 export const filterOptionData = [
   { id: 'DOES_NOT_CONTAIN', name: 'Does Not Contain (Text)' },
   { id: 'CONTAINS', name: 'Contains (Text)' },
@@ -600,20 +401,20 @@ export const riskValues = [
 ];
 
 export const riskIndicatorTypeToTypeData: {
-  [name: string]: { riskTypeId: number; behaviorTypeId: number };
+  [name: string]: { behaviorTypeId: number };
 } = {
-  value: { riskTypeId: 1, behaviorTypeId: 1 },
-  within: { riskTypeId: 1, behaviorTypeId: 2 },
-  count: { riskTypeId: 1, behaviorTypeId: 3 },
-  unique: { riskTypeId: 1, behaviorTypeId: 4 },
-  summation: { riskTypeId: 1, behaviorTypeId: 5 },
-  trend: { riskTypeId: 1, behaviorTypeId: 6 },
-  outlier_val: { riskTypeId: 1, behaviorTypeId: 7 },
-  outlier_time: { riskTypeId: 1, behaviorTypeId: 8 },
-  normalize: { riskTypeId: 1, behaviorTypeId: 9 },
-  similarity: { riskTypeId: 1, behaviorTypeId: 10 },
-  discrepancy: { riskTypeId: 1, behaviorTypeId: 11 },
-  sentiment: { riskTypeId: 1, behaviorTypeId: 12 },
+  value: { behaviorTypeId: 1 },
+  within: { behaviorTypeId: 2 },
+  count: { behaviorTypeId: 3 },
+  unique: { behaviorTypeId: 4 },
+  summation: { behaviorTypeId: 5 },
+  trend: { behaviorTypeId: 6 },
+  outlier_val: { behaviorTypeId: 7 },
+  outlier_time: { behaviorTypeId: 8 },
+  normalize: { behaviorTypeId: 9 },
+  similarity: { behaviorTypeId: 10 },
+  discrepancy: { behaviorTypeId: 11 },
+  sentiment: { behaviorTypeId: 12 },
 };
 
 export const behaviorTypeToRiskIndicatortype: {
@@ -739,11 +540,3 @@ export const riskSingleRecordTableData: RiskSingleRecordDataType = {
     },
   ],
 };
-
-export const riskHistoricalTableData: RiskHistoricalTableDataType[] = [
-  { id: 1, value: 1, occurrence: 351 },
-  { id: 2, value: 2, occurrence: 725 },
-  { id: 3, value: 3, occurrence: 5651 },
-  { id: 4, value: 4, occurrence: 25651 },
-  { id: 5, value: 5, occurrence: 1531 },
-];

@@ -7,12 +7,12 @@
  * Author: Diego Martinez
  */
 import React, { useState, useEffect } from 'react';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, LinearProgress } from '@mui/material';
 
 import { UIContainer } from '@/components/UI';
 import { DashboardLayout } from '@/layouts';
 import { BuildModelNavbar } from '@/modules/Models';
-import { AttributesType, Model, RiskIndicatorType } from '@/types';
+import { AccessTokenType, AttributesType, RiskIndicatorType } from '@/types';
 import { BuildModelCategory, BuildModelWeightModal } from '@/modules/Models';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/hooks';
@@ -30,7 +30,6 @@ import {
   modelByIdSelector,
   getDataSourcesConfigInitialized,
   retrieveDataSources,
-  getAccessToken,
   getListsInitialized,
   retrieveLists,
   isModelsInitialized,
@@ -39,17 +38,36 @@ import {
 import { RiskIndicatorModelType } from '@/types/models.type';
 import { attributesByIdSelector } from '@/redux/slices/attributes.slice';
 import { selectInitialModelRiskIndicator } from '@/redux/slices/model.slice';
+import config from '@/config';
+import { useCookies } from 'react-cookie';
+import { noop } from 'lodash';
+
+const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
 const weightOperationsByItemType: { [itemType: string]: string } = {
   riskIndicator: 'changeRiskIndicatorWeightInCategory',
   category: 'changeModelCategoryWeightAtIndex',
 };
 
+type SaveWeightType = {
+  saveWeightsModelId: string;
+  saveWeightsItemType: string;
+  saveWeightsCategoryIndex: number;
+  riskIndicatorIndex?: number;
+  value: number;
+};
 const Build = (): JSX.Element => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { query, isReady } = router;
+  const { query, isReady } = router as {
+    query: {
+      modelId?: string | null;
+    };
+    isReady: boolean;
+  };
   const { modelId } = query as { modelId: string };
+  const [cookies] = useCookies(['accessToken']);
+  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
   const attributes: RiskIndicatorType[] = useAppSelector(
     modelAttributesSelector
   );
@@ -81,10 +99,11 @@ const Build = (): JSX.Element => {
     getDataSourcesConfigInitialized
   );
   const isListsInitialized = useAppSelector(getListsInitialized);
-  const stateAccessToken = useAppSelector(getAccessToken);
   const isModelInitialized = useAppSelector(isModelsInitialized);
   const isAttributesInitialized = useAppSelector(getIsAttributesInitialized);
-  const [model, setModel] = useState<Model | null>(null);
+  const newModelCandidate = newModel ?? null;
+  const currentModelCandidate = currentModel ?? null;
+  const model = modelId ? currentModelCandidate : newModelCandidate;
   const [categoryList, setCategoryList] = useState<AttributesType[] | null>(
     null
   );
@@ -103,34 +122,46 @@ const Build = (): JSX.Element => {
   const [openWeightChange, setOpenWeightChange] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isDataSourceConfigInitialized && stateAccessToken) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      dispatch(retrieveDataSources({ accessToken: stateAccessToken }));
+    if (isReady) {
+      if (!cookieAccessToken) {
+        router
+          .push(
+            `${baseAuthenticationUrl}/login/${config.AUTHENTICATION_SERVICE}`
+          )
+          .then(noop);
+      }
     }
-  }, [isDataSourceConfigInitialized, dispatch, stateAccessToken]);
+  }, [isReady, cookieAccessToken, router, dispatch]);
 
   useEffect(() => {
-    if (!isAttributesInitialized && isReady && stateAccessToken) {
+    if (!isDataSourceConfigInitialized && cookieAccessToken) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      dispatch(retrieveDataSources({ accessToken: cookieAccessToken }));
+    }
+  }, [isDataSourceConfigInitialized, dispatch, cookieAccessToken]);
+
+  useEffect(() => {
+    if (!isAttributesInitialized && isReady && cookieAccessToken) {
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         retrieveAttributes({
-          accessToken: stateAccessToken,
+          accessToken: cookieAccessToken,
           limit: 100,
         })
       );
     }
-  }, [isAttributesInitialized, isReady, dispatch, stateAccessToken]);
+  }, [isAttributesInitialized, isReady, dispatch, cookieAccessToken]);
 
   useEffect(() => {
     if (isAttributesInitialized) {
-      if (!categoryList && isReady && modelId && stateAccessToken) {
+      if (!categoryList && isReady && modelId && cookieAccessToken) {
         dispatch(
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           retrieveModel({
-            accessToken: stateAccessToken,
+            accessToken: cookieAccessToken,
             modelId: modelId as string,
           })
         );
@@ -143,7 +174,7 @@ const Build = (): JSX.Element => {
     isReady,
     modelId,
     dispatch,
-    stateAccessToken,
+    cookieAccessToken,
     isModelInitialized,
     isAttributesInitialized,
   ]);
@@ -170,14 +201,6 @@ const Build = (): JSX.Element => {
   }, [attributes, attributeList, newModelAttributes, modelId]);
 
   useEffect(() => {
-    if (modelId && currentModel) {
-      setModel(currentModel);
-    } else if (!modelId && newModel) {
-      setModel(newModel);
-    }
-  }, [currentModel, newModel, setModel, modelId]);
-
-  useEffect(() => {
     if (
       !riskAttributes ||
       (Object.keys(riskAttributes).length !==
@@ -189,31 +212,19 @@ const Build = (): JSX.Element => {
   }, [setRiskAttributes, riskAttributes, riskIndicators, isReady]);
 
   useEffect(() => {
-    if (stateAccessToken && !isListsInitialized) {
+    if (cookieAccessToken && !isListsInitialized) {
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         retrieveLists({
-          accessToken: stateAccessToken,
+          accessToken: cookieAccessToken,
           limit: 25,
         })
       );
     }
-  }, [dispatch, isListsInitialized, stateAccessToken]);
+  }, [dispatch, isListsInitialized, cookieAccessToken]);
 
-  const onSaveWeights: ({
-    saveWeightsModelId,
-    saveWeightsItemType,
-    saveWeightsCategoryIndex,
-    riskIndicatorIndex,
-    value,
-  }: {
-    saveWeightsModelId: string;
-    saveWeightsItemType: string;
-    saveWeightsCategoryIndex: number;
-    riskIndicatorIndex?: number;
-    value: number;
-  }) => void = ({
+  const onSaveWeights: (data: SaveWeightType) => void = ({
     saveWeightsModelId,
     saveWeightsItemType,
     saveWeightsCategoryIndex,
@@ -232,14 +243,26 @@ const Build = (): JSX.Element => {
     );
   };
 
+  if (!cookieAccessToken) {
+    return <LinearProgress />;
+  }
+
   return (
     <DashboardLayout
       title="Model and Scoring Configuration"
       navbarBorder={false}
-      navEls={<BuildModelNavbar model={model} />}
+      navEls={
+        <BuildModelNavbar model={model} accessToken={cookieAccessToken} />
+      }
     >
       <UIContainer
-        sx={{ background: '#FFFFFF', minHeight: 'calc(100vh - 136px)' }}
+        disableGutters
+        sx={{
+          background: '#FFFFFF',
+          minHeight: 'calc(100vh - 136px)',
+          marginTop: '15px',
+          paddingLeft: '36px',
+        }}
       >
         {!isReady && <CircularProgress />}
         {isReady &&
@@ -270,25 +293,25 @@ const Build = (): JSX.Element => {
                       ) {
                         const newRiskIndicators: RiskIndicatorModelType[] =
                           newModelCategories &&
-                          newModelCategories.length > 0 &&
-                          weightChangeCategoryIndex <
+                            newModelCategories.length > 0 &&
+                            weightChangeCategoryIndex <
                             newModelCategories.length &&
-                          newModelCategories[weightChangeCategoryIndex] &&
-                          newModelCategories[weightChangeCategoryIndex]
-                            .attributes &&
-                          newModelCategories[weightChangeCategoryIndex]
-                            .attributes.length > 0
+                            newModelCategories[weightChangeCategoryIndex] &&
+                            newModelCategories[weightChangeCategoryIndex]
+                              .attributes &&
+                            newModelCategories[weightChangeCategoryIndex]
+                              .attributes.length > 0
                             ? newModelCategories[weightChangeCategoryIndex]
-                                .attributes
+                              .attributes
                             : [initialRiskIndicatorModel];
                         const selectedRiskIndicators: RiskIndicatorModelType[] =
                           categories &&
-                          categories.length > 0 &&
-                          weightChangeCategoryIndex < categories.length &&
-                          categories[weightChangeCategoryIndex] &&
-                          categories[weightChangeCategoryIndex].attributes &&
-                          categories[weightChangeCategoryIndex].attributes
-                            .length > 0
+                            categories.length > 0 &&
+                            weightChangeCategoryIndex < categories.length &&
+                            categories[weightChangeCategoryIndex] &&
+                            categories[weightChangeCategoryIndex].attributes &&
+                            categories[weightChangeCategoryIndex].attributes
+                              .length > 0
                             ? categories[weightChangeCategoryIndex].attributes
                             : newRiskIndicators;
                         setModelWeightAttributes(selectedRiskIndicators);

@@ -12,8 +12,7 @@ import { UIDefaultTextField, UIFlexWrapBox, UISelect } from '@/components/UI';
 import { Box, Collapse, IconButton, Typography } from '@mui/material';
 import { behaviorData, emailData } from '@/_mock';
 import { RiskSingleRecordRowType } from '@/types';
-import Image from 'next/image';
-import { appImageLoader } from '@/libs/image-loader';
+import BuildInformationIcon from '@/modules/Models/BuildRisk/BuildInformationIcon';
 
 const BuildRiskSingleRow = ({
   riskItem,
@@ -55,7 +54,7 @@ const BuildRiskSingleRow = ({
         </IconButton>
         Risk Name
         <UIDefaultTextField
-          value={riskItem.name}
+          defaultValue={riskItem.name}
           sx={{
             width: '288px',
             height: '36px',
@@ -117,15 +116,11 @@ const BuildRiskSingleRow = ({
               itemList={emailData}
               handleChange={handleChange}
             />
-            <IconButton sx={{ padding: 0 }} onClick={onOpenHistory}>
-              <Image
-                src="images/icons/info.svg"
-                loader={appImageLoader}
-                width={16}
-                height={16}
-                alt="info"
-              />
-            </IconButton>
+            <BuildInformationIcon
+              title="Historical Data"
+              onOpenHistory={onOpenHistory}
+              readOnly={false}
+            />
             <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
               is similar to
             </Typography>
@@ -134,15 +129,11 @@ const BuildRiskSingleRow = ({
               itemList={emailData}
               handleChange={handleChange}
             />
-            <IconButton sx={{ padding: 0 }} onClick={onOpenHistory}>
-              <Image
-                src="images/icons/info.svg"
-                loader={appImageLoader}
-                width={16}
-                height={16}
-                alt="info"
-              />
-            </IconButton>
+            <BuildInformationIcon
+              title="Historical Data"
+              onOpenHistory={onOpenHistory}
+              readOnly={false}
+            />
             <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
               then score
             </Typography>

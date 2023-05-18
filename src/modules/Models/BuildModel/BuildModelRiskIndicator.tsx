@@ -32,6 +32,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { SelectChangeEvent } from '@mui/material/Select/SelectInput';
 import { RiskIndicatorModelType } from '@/types/models.type';
+import { noop } from 'lodash';
 
 const BuildModelRiskIndicator = ({
   indicator,
@@ -60,6 +61,7 @@ const BuildModelRiskIndicator = ({
   );
   const lists = useAppSelector(getListIds);
   const [openCollapse, setOpenCollapse] = useState<boolean>(false);
+  const [viewIcons, setViewIcons] = useState<boolean>(false);
   const componentFn: riskIndicatorFunctionType | null =
     (indicator &&
       indicator.attributeType &&
@@ -130,6 +132,12 @@ const BuildModelRiskIndicator = ({
     }
   };
 
+  const toggleViewIcons = (): void => {
+    setViewIcons((prevState) => {
+      return !prevState;
+    });
+  };
+
   return (
     <Box sx={{ mt: 2.5 }}>
       <UIFlexWrapBox
@@ -168,13 +176,14 @@ const BuildModelRiskIndicator = ({
                 fontWeight: '400',
                 fontSize: '13px',
                 lineHeight: '20px',
-                color: '#3F3F3F',
+                color: 'grey',
               }}
             >
-              Pull-down from Risk Indicator List
+              Select
             </Typography>
           }
           defaultValue={riskIndicatorId}
+          value={riskIndicatorId || -1}
           handleChange={(event) =>
             handleSelectChange(event, {
               operation: 'changeRiskIndicatorIdInCategory',
@@ -203,38 +212,50 @@ const BuildModelRiskIndicator = ({
             : 0}
           %
         </Typography>
-        <MoreHoriz />
-        <IconButton
-          onClick={(event) =>
-            handleActionClick(event, {
-              operation: 'appendRiskIndicatorToCategory',
-              targetId: modelId,
-              categoryListIndex: categoryIndex,
-            })
-          }
-          sx={{ padding: 0 }}
-        >
-          <AddCircleOutline />
-        </IconButton>
-        <IconButton
-          onClick={(event) =>
-            handleActionClick(event, {
-              operation: 'removeRiskIndicatorAtIndex',
-              targetId: modelId,
-              categoryListIndex: categoryIndex,
-              riskIndicatorListIndex: index,
-            })
-          }
-          sx={{ padding: 0 }}
-        >
-          <Image
-            src="images/icons/delete.svg"
-            loader={appImageLoader}
-            width={20}
-            height={20}
-            alt="delete"
-          />
-        </IconButton>
+        <MoreHoriz
+          onClick={toggleViewIcons}
+          sx={{
+            cursor: 'pointer',
+            paddingTop: '5px',
+            width: '1.25em',
+            height: '1.25em',
+          }}
+        />
+        {viewIcons && (
+          <IconButton
+            onClick={(event) =>
+              handleActionClick(event, {
+                operation: 'appendRiskIndicatorToCategory',
+                targetId: modelId,
+                categoryListIndex: categoryIndex,
+              })
+            }
+            sx={{ padding: 0 }}
+          >
+            <AddCircleOutline />
+          </IconButton>
+        )}
+        {viewIcons && (
+          <IconButton
+            onClick={(event) =>
+              handleActionClick(event, {
+                operation: 'removeRiskIndicatorAtIndex',
+                targetId: modelId,
+                categoryListIndex: categoryIndex,
+                riskIndicatorListIndex: index,
+              })
+            }
+            sx={{ padding: 0 }}
+          >
+            <Image
+              src="images/icons/delete.svg"
+              loader={appImageLoader}
+              width={20}
+              height={20}
+              alt="delete"
+            />
+          </IconButton>
+        )}
       </UIFlexWrapBox>
       <UIFlexWrapBox
         sx={{
@@ -249,6 +270,10 @@ const BuildModelRiskIndicator = ({
               riskFields,
               riskValues,
               lists,
+              noop,
+              noop,
+              noop,
+              noop,
               true
             )}
         </Collapse>

@@ -26,3 +26,22 @@ export const chunkArray = <T>(array: T[], chunkSize: number): T[][] => {
   });
   return returnArray;
 };
+
+export const existsInArray = <T>(
+  array: T[],
+  predicate: (item: T) => boolean
+): boolean => {
+  for (let i = 0; i < array.length; i++) {
+    if (predicate(array[i])) {
+      return true;
+    }
+  }
+  return false;
+};
+
+export const allInArray = <T>(
+  array: T[],
+  predicate: (item: T) => boolean
+): boolean => {
+  return !existsInArray(array, (item: T) => !predicate(item));
+};

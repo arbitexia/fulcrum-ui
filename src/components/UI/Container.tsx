@@ -13,14 +13,16 @@ const UIContentWrapper = styled(Container)(({ theme }) => ({
   padding: theme.spacing(1, 0),
   gap: theme.spacing(3),
   width: '100%',
+  maxWidth: '100vw',
 }));
 
 export const UIContainer = ({
   children,
+  maxWidth = 'xl',
   ...rest
 }: ContainerProps): JSX.Element => {
   return (
-    <UIContentWrapper maxWidth="xl" {...rest}>
+    <UIContentWrapper maxWidth={maxWidth} {...rest}>
       {children}
     </UIContentWrapper>
   );

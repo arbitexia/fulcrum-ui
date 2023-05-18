@@ -20,10 +20,15 @@ import {
 import { modelList } from '@/_mock';
 import { DefaultModalProps } from '@/types';
 
+interface SlidelineModalProps extends DefaultModalProps {
+  onUpdate: () => void;
+}
+
 export const SlidelineModal = ({
   open,
   onClose,
-}: DefaultModalProps): JSX.Element => {
+  onUpdate,
+}: SlidelineModalProps): JSX.Element => {
   return (
     <UIDefaultDialog
       open={open}
@@ -72,12 +77,12 @@ export const SlidelineModal = ({
           sx={{ justifyContent: 'space-between', ml: '20px', height: '84px' }}
         >
           <UIDefaultTextField
-            value={5}
+            defaultValue={5}
             sx={{ width: '60px', height: '32px', paddingLeft: '8px' }}
             variant="standard"
           />
           <UIDefaultTextField
-            value={30}
+            defaultValue={30}
             sx={{ width: '60px', height: '32px', paddingLeft: '8px' }}
             variant="standard"
           />
@@ -98,7 +103,14 @@ export const SlidelineModal = ({
         </UIFlexColumnBox>
       </UIFlexWrapBox>
       <UIFlexCenterBox sx={{ mt: '42px', mb: '10px' }}>
-        <UIModalButton>Update</UIModalButton>
+        <UIModalButton
+          onClick={() => {
+            onUpdate();
+            onClose();
+          }}
+        >
+          Update
+        </UIModalButton>
       </UIFlexCenterBox>
     </UIDefaultDialog>
   );

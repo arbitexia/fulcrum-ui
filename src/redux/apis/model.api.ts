@@ -81,6 +81,22 @@ export const createModel = async (params: NewModelParams): Promise<string> => {
   return response.data;
 };
 
+export const modifyModel = async (params: NewModelParams): Promise<Model> => {
+  await axios.post<string>(`${baseModelUrl}/api/models/new`, params, {
+    headers,
+  });
+  const modelJsonParsed = JSON.parse(params.modelJson);
+  return {
+    id: params.modelId,
+    name: modelJsonParsed.name,
+    description: modelJsonParsed.description,
+    owner: params.author,
+    lastUpdate: params.lastUpdateDate,
+    active: params.active,
+    attributes: modelJsonParsed.attributes,
+  };
+};
+
 export const deleteModel = async (
   params: DeleteModelParams
 ): Promise<string> => {
@@ -145,8 +161,17 @@ export const createAttribute = async (
 export const deleteAttribute = async (
   params: DeleteAttributeParams
 ): Promise<string> => {
-  await axios.post<void>(`${baseModelUrl}/api/attribute/delete`, params, {
-    headers,
-  });
+  const response = await axios.post<string[]>(
+    `${baseModelUrl}/api/attribute/delete`,
+    params,
+    {
+      headers,
+    }
+  );
+  if (response.data && response.data.length > 0) {
+    throw new Error(
+      `Risk indicator ${params.attributeName} cannot be deleted. It's being used in models.`
+    );
+  }
   return params.attributeId;
 };

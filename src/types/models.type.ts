@@ -30,8 +30,9 @@ export type ModelsTableDataType = {
   name: string;
   description: string;
   owner: string;
-  lastUpdate: string;
+  lastUpdate: number;
   status?: string;
+  active?: boolean;
   items?: FiltersDataType[];
 };
 
@@ -98,6 +99,7 @@ export type Model = {
   owner?: string;
   lastUpdate?: number;
   status?: string;
+  active?: boolean;
   attributes: AttributesType[];
 } & IdBase;
 
@@ -110,6 +112,24 @@ export type AttributesType = {
   status?: string;
   attributes: RiskIndicatorModelType[];
 } & WeightBase;
+
+export type Filter = {
+  filterId: string;
+  name: string;
+  description?: string;
+  owner?: string;
+  lastUpdate?: number;
+  status?: string;
+  active?: boolean;
+  attributes: FilterAttributeType[];
+} & IdBase;
+
+export type FilterAttributeType = {
+  id: number;
+  field: number;
+  option: number;
+  value: string;
+};
 
 export type FullModel = Omit<Model, 'attributes'> & {
   attributes: FullAttributesType[];
@@ -125,20 +145,9 @@ export type RiskIndicatorModelType = {
   attributeId: string;
 } & WeightBase;
 
-export type RiskIndicatorType = {
-  attributeType: string;
-  name: string;
-  description?: string;
-  owner?: string;
-  lastUpdate?: string;
-  status?: string;
-  dataSource?: string;
-  dataSource2?: string;
-  riskField?: string;
-  riskField2?: string;
-  threshold?: number;
-  min?: number;
-  max?: number;
+export type OutlierKeys = 'outlier_time' | 'outlier_val';
+
+export type OutlierBase = {
   occurrenceBased?: boolean;
   scoringType?: string;
   unitInMillis?: number;
@@ -152,6 +161,23 @@ export type RiskIndicatorType = {
   unitWeightingMultiplier?: number;
   periodWeightingMultiplier?: number;
   fillInUnits?: number;
+};
+
+export type RiskIndicatorType = {
+  attributeType: string;
+  name: string;
+  description?: string;
+  owner?: string;
+  lastUpdate?: number;
+  status?: string;
+  active?: boolean;
+  dataSource?: string;
+  dataSource2?: string;
+  riskField?: string;
+  riskField2?: string;
+  threshold?: number;
+  min?: number;
+  max?: number;
   useData?: string;
   useOverTime?: string;
   useDateValue?: number;
@@ -159,6 +185,8 @@ export type RiskIndicatorType = {
   reduceType?: string;
   reduceDateValue?: number;
   reduceDateType?: string;
+  useStartDate?: string;
+  useEndDate?: string;
   agingDays?: number;
   instanceCount?: number;
   values?: string[];
@@ -169,7 +197,8 @@ export type RiskIndicatorType = {
   windowInDays?: number;
   featureFilter?: RiskIndicatorExcludeItems[];
   timeFilter?: RiskIndicatorIncludeTimes;
-} & IdBase;
+} & IdBase &
+  OutlierBase;
 
 export type RiskIndicatorFeatures = string;
 
@@ -178,8 +207,8 @@ export type RiskIndicatorValues = {
 } & WeightBase;
 
 export type RiskIndicatorRangeValues = {
-  rangeStart: number;
-  rangeEnd: number;
+  rangeStart: string;
+  rangeEnd: string;
 } & WeightBase;
 
 export type RiskIndicatorOrderingValues = number;
@@ -203,7 +232,8 @@ export type ConfigurationTableType =
   | ModelsTableDataType
   | Model
   | RiskIndicatorType
-  | List;
+  | List
+  | Filter;
 
 export type RetrieveModelsParams = {
   accessToken: string;
@@ -226,6 +256,7 @@ export type NewModelParams = {
   author: string;
   modelId: string | null;
   lastUpdateDate: number;
+  active: boolean;
 };
 
 export type DeleteModelParams = {
@@ -258,6 +289,12 @@ export type NewAttributeParams = {
 
 export type DeleteAttributeParams = {
   accessToken: string;
+  attributeName: string;
+  attributeId: string;
+};
+
+export type DeleteAttributeResponse = {
+  affectedModelIds: string[];
   attributeId: string;
 };
 
@@ -266,7 +303,8 @@ export type List = {
   description?: string;
   status?: string;
   owner?: string;
-  lastUpdate?: string;
+  active?: boolean;
+  lastUpdate?: number;
   listValues: string;
 };
 
@@ -292,4 +330,23 @@ export type NewListParams = {
 export type DeleteListParams = {
   accessToken: string;
   listId: string;
+};
+
+export type RetrieveFiltersParams = {
+  accessToken: string;
+  limit: number;
+};
+
+export type RetrieveFilterParams = {
+  accessToken: string;
+  filterId: string;
+};
+
+export type NewFilterParams = {
+  accessToken: string;
+  filterId: string;
+  filterJson: string;
+  author: string;
+  name: string;
+  lastUpdateDate: number;
 };

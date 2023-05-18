@@ -16,7 +16,6 @@ import { AxiosError } from 'axios';
 const initialState: ReduxJson.ControlState = {
   loading: true,
   status: null,
-  scoringPaused: true,
 };
 
 export const ingestData = createAsyncThunk<
@@ -100,12 +99,7 @@ export const fullRun = createAsyncThunk<
 const controlSlice = createSlice({
   name: `control`,
   initialState,
-  reducers: {
-    toggleScoringMode: (state) => {
-      const mode = state.scoringPaused;
-      state.scoringPaused = !mode;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(ingestData.pending, (state) => {
@@ -182,11 +176,6 @@ const controlSlice = createSlice({
       });
   },
 });
-
-export const { toggleScoringMode } = controlSlice.actions;
-
-export const getIsScoringPaused = (state: RootState): boolean =>
-  state.control.scoringPaused;
 
 export const controlSelector = (state: RootState): ReduxJson.ControlState =>
   state.control;

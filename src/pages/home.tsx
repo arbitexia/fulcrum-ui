@@ -7,8 +7,9 @@
  * Author: Diego Martinez
  */
 import { DashboardLayout } from '@/layouts';
-import { Box, Typography } from '@mui/material';
+import { Box, LinearProgress, Typography } from '@mui/material';
 import {
+  AccessTokenType,
   PaginateParam,
   PaginationState,
   RetrieveScoringParams,
@@ -39,8 +40,6 @@ import {
   getDataSourcesConfigInitialized,
   retrieveDataSources,
   getEntitiesConfigInitialized,
-  getAccessToken,
-  setStateAccessToken,
   getStatsInitialized,
   isModelsInitialized,
   retrieveModels,
@@ -53,34 +52,88 @@ import {
   scoringPageInfoSelector,
   isEntityStatusPending,
   getAllCursorsByPageNumber,
-  getEntities,
+  categoriesSelector,
+  getHomePageTopPercent,
+  getNumberTopRiskIndicators,
+  getRiskIndicatorsConfigInitialized,
+  retrieveEntitiesConfig,
+  retrieveRiskIndicatorsConfig,
+  retrieveMaskingSystemStatus,
+  isGovernanceSystemMaskingInitializedSelector,
+  isGovernanceEntitiestoMaskInitializedSelector,
+  retrieveMaskings,
 } from '@/redux/slices';
-import { retrieveEntitiesConfig } from '@/redux/slices/config.slice';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import config from '@/config';
 import { noop } from 'lodash';
 import { RetrieveScoringCountParams } from '@/types/scoring.type';
-import { getIsScoringCountInitialized } from '@/redux/slices/scoring.slice';
+import {
+  getIsScoringCountInitialized,
+  getScoringCount,
+  getSelectedCategoriesSelector,
+} from '@/redux/slices/scoring.slice';
+import { useCookies } from 'react-cookie';
+import { addHours } from '@/libs/time-utils';
+import {
+  getGlobalStatsByStatus,
+  getGlobalStatsInitializedByStatus,
+  getTopRiskIndicators,
+  getTopRiskIndicatorsInitializedByModelId,
+  getTriageAndAverageScores,
+  getTriageAndAverageScoresByModelId,
+  getTriageAndAverageScoresInitializedByModelId,
+  getYearStatuses,
+} from '@/redux/slices/stat.slice';
+import {
+  ENTITY_STATUS_CASE_OPENED,
+  ENTITY_STATUS_REVIEWED,
+} from '@/redux/slices/entity.slice';
+import { roundScore } from '@/libs/math-utils';
+import { getScoreColor } from '@/libs/color-generator';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
 const HomePage = (): JSX.Element => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { query, isReady } = router;
-  const { accessToken: queryAccessToken = null } = query as {
-    accessToken: string | null;
+  const [cookies, setCookie] = useCookies(['accessToken', 'refreshToken']);
+  const { query, isReady } = router as {
+    query: AccessTokenType;
+    isReady: boolean;
   };
+  const {
+    accessToken: queryAccessToken = null,
+    refreshToken: queryRefreshToken = null,
+  } = query as AccessTokenType;
   const modelId = useAppSelector(getSelectedModelId);
   const statusCardsSelected = useAppSelector(statsToStatusCards(modelId));
+  const isStatusReviewedInitialized = useAppSelector(
+    getGlobalStatsInitializedByStatus('Reviewed')
+  );
+  const isStatusCaseOpenedInitialized = useAppSelector(
+    getGlobalStatsInitializedByStatus('Case Opened')
+  );
+  const reviewedStatsByStatus: StateCardItemType | null = useAppSelector(
+    getGlobalStatsByStatus('Reviewed')
+  );
+  const caseOpenedStatsByStatus: StateCardItemType | null = useAppSelector(
+    getGlobalStatsByStatus('Case Opened')
+  );
   const isDataSourceConfigInitialized = useAppSelector(
     getDataSourcesConfigInitialized
   );
   const isEntitiesConfigInitialized = useAppSelector(
     getEntitiesConfigInitialized
   );
-  const stateAccessToken = useAppSelector(getAccessToken);
+  const isRiskIndicatorConfigInitialized = useAppSelector(
+    getRiskIndicatorsConfigInitialized
+  );
+  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
+  const categories = useAppSelector(categoriesSelector);
+  const selectedCategories: string[] = useAppSelector(
+    getSelectedCategoriesSelector
+  );
   const isStatsInitialized = useAppSelector(getStatsInitialized);
   const modelsListInitialized = useAppSelector(isModelsInitialized);
   const modelStats = useAppSelector(getSelectedStats);
@@ -98,65 +151,128 @@ const HomePage = (): JSX.Element => {
     useAppSelector(getAllCursorsByPageNumber);
   const isScoringStatusFailedValue = useAppSelector(isScoringStatusFailed);
   const isEntityStatusPendingValue = useAppSelector(isEntityStatusPending);
+  const scoringCount = useAppSelector(getScoringCount);
+  const isTopRiskIndicatorsInitialized = useAppSelector(
+    getTopRiskIndicatorsInitializedByModelId(modelId)
+  );
+  const isTriageInitialized = useAppSelector(
+    getTriageAndAverageScoresInitializedByModelId(modelId)
+  );
+  const triageAndAverageScoresByModelId = useAppSelector(
+    getTriageAndAverageScoresByModelId(modelId)
+  );
+  const isGovernanceSystemMaskingInitialized = useAppSelector(
+    isGovernanceSystemMaskingInitializedSelector
+  );
+  const isGovernanceEntitiestoMaskInitialized = useAppSelector(
+    isGovernanceEntitiestoMaskInitializedSelector
+  );
+  const homePageTopPercent = useAppSelector(getHomePageTopPercent);
+  const numberTopRiskIndicators = useAppSelector(getNumberTopRiskIndicators);
   const [innerModelId, setInnerModelId] = useState<string | null>(null);
+  const [originalCategories, setOriginalCategories] = useState<string[]>([]);
+  const [originalCategoriesSet, setOriginalCategoriesSet] =
+    useState<boolean>(false);
+  const [refreshCategories, setRefreshCategories] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!modelsListInitialized && stateAccessToken) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      dispatch(retrieveModels({ accessToken: stateAccessToken, limit: 3000 }));
-      dispatch(
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        retrieveAttributes({ accessToken: stateAccessToken, limit: 3000 })
-      );
+    if (
+      originalCategories.length === 0 &&
+      isScoringInitialized &&
+      !originalCategoriesSet
+    ) {
+      setOriginalCategories(categories);
+      setOriginalCategoriesSet(true);
+      setRefreshCategories(true);
     }
-  }, [dispatch, modelsListInitialized, stateAccessToken]);
+  }, [
+    originalCategories,
+    categories,
+    isScoringInitialized,
+    setOriginalCategories,
+    originalCategoriesSet,
+    setOriginalCategoriesSet,
+    setRefreshCategories,
+  ]);
 
   useEffect(() => {
     if (isReady) {
-      if (!stateAccessToken && !queryAccessToken) {
+      if (!cookieAccessToken && !queryAccessToken) {
         router
           .push(
             `${baseAuthenticationUrl}/login/${config.AUTHENTICATION_SERVICE}`
           )
           .then(noop);
-      } else if (!stateAccessToken && queryAccessToken) {
-        dispatch(setStateAccessToken({ accessToken: queryAccessToken }));
+      } else if (!cookieAccessToken && queryAccessToken) {
+        setCookie('accessToken', queryAccessToken, {
+          expires: addHours(new Date(), 1),
+        });
+        setCookie('refreshToken', queryRefreshToken);
       }
     }
-  }, [isReady, stateAccessToken, queryAccessToken, dispatch, router]);
+  }, [
+    isReady,
+    cookieAccessToken,
+    queryAccessToken,
+    queryRefreshToken,
+    router,
+    dispatch,
+    setCookie,
+  ]);
+
+  useEffect(() => {
+    if (!modelsListInitialized && cookieAccessToken) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      dispatch(retrieveModels({ accessToken: cookieAccessToken, limit: 3000 }));
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        retrieveAttributes({ accessToken: cookieAccessToken, limit: 3000 })
+      );
+    }
+  }, [dispatch, modelsListInitialized, cookieAccessToken]);
 
   useEffect(() => {
     if (
       modelId &&
-      stateAccessToken &&
+      cookieAccessToken &&
       (modelId !== innerModelId || !isStatsInitialized)
     ) {
       setInnerModelId(modelId);
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        getLatestStat({ modelId, accessToken: stateAccessToken })
+        getLatestStat({ modelId, accessToken: cookieAccessToken, limit: 6 })
       );
     }
-  }, [dispatch, modelId, innerModelId, stateAccessToken, isStatsInitialized]);
+  }, [dispatch, modelId, innerModelId, cookieAccessToken, isStatsInitialized]);
 
   useEffect(() => {
-    if (!isDataSourceConfigInitialized && stateAccessToken) {
+    if (!isDataSourceConfigInitialized && cookieAccessToken) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      dispatch(retrieveDataSources({ accessToken: stateAccessToken }));
+      dispatch(retrieveDataSources({ accessToken: cookieAccessToken }));
     }
-  }, [dispatch, isDataSourceConfigInitialized, stateAccessToken]);
+  }, [dispatch, isDataSourceConfigInitialized, cookieAccessToken]);
 
   useEffect(() => {
-    if (!isEntitiesConfigInitialized && stateAccessToken) {
+    if (!isEntitiesConfigInitialized && cookieAccessToken) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      dispatch(retrieveEntitiesConfig({ accessToken: stateAccessToken }));
+      dispatch(retrieveEntitiesConfig({ accessToken: cookieAccessToken }));
     }
-  }, [dispatch, isEntitiesConfigInitialized, stateAccessToken]);
+  }, [dispatch, isEntitiesConfigInitialized, cookieAccessToken]);
+
+  useEffect(() => {
+    if (!isRiskIndicatorConfigInitialized && cookieAccessToken) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        retrieveRiskIndicatorsConfig({ accessToken: cookieAccessToken })
+      );
+    }
+  }, [dispatch, isRiskIndicatorConfigInitialized, cookieAccessToken]);
 
   const dispatchRetrieveScores = useCallback(
     (args: RetrieveScoringParams): Promise<unknown> => {
@@ -171,7 +287,6 @@ const HomePage = (): JSX.Element => {
     },
     [dispatch]
   );
-
   const dispatchRetrieveScoresCount = useCallback(
     (args: RetrieveScoringCountParams): Promise<unknown> => {
       return new Promise<void>((resolve) => {
@@ -186,9 +301,66 @@ const HomePage = (): JSX.Element => {
     [dispatch]
   );
 
+  const retrieveScoresCallback = useCallback(
+    ({
+      inputCategories,
+      inputSelectPageInfo,
+      inputCursorsByPageNumber,
+    }: {
+      inputCategories?: string[];
+      inputSelectPageInfo: PaginateParam;
+      inputCursorsByPageNumber: { [_pageNumber: number]: PaginationState };
+    }) => {
+      if (modelStats && cookieAccessToken) {
+        const changingModel = innerModelId !== modelId;
+        const usePageNumber = changingModel
+          ? 1
+          : inputSelectPageInfo?.pageNumber ?? 1;
+        const cursor =
+          inputCursorsByPageNumber[usePageNumber]?.beginCursor ?? '';
+        const useCursor = usePageNumber === 1 ? '' : cursor ?? '';
+        const args: RetrieveScoringParams = {
+          accessToken: cookieAccessToken,
+          requestType:
+            inputCategories && inputCategories.length > 0
+              ? undefined
+              : 'getRanked',
+          modelId,
+          modelInstance: modelStats.instance,
+          cursor: useCursor,
+          limit: inputSelectPageInfo.limit,
+          pageNumber: usePageNumber,
+          categories: inputCategories,
+        };
+        dispatchRetrieveScores(args)
+          .then(() => {
+            dispatchRetrieveScoresCount(args);
+          })
+          .then(() => {
+            setInnerModelId(modelId);
+            if (changingModel) {
+              setOriginalCategories([]);
+              setOriginalCategoriesSet(false);
+            }
+          });
+      }
+    },
+    [
+      innerModelId,
+      setInnerModelId,
+      setOriginalCategories,
+      setOriginalCategoriesSet,
+      modelId,
+      modelStats,
+      cookieAccessToken,
+      dispatchRetrieveScores,
+      dispatchRetrieveScoresCount,
+    ]
+  );
+
   useEffect(() => {
     if (
-      stateAccessToken &&
+      cookieAccessToken &&
       modelId &&
       modelStats &&
       modelsListInitialized &&
@@ -199,34 +371,21 @@ const HomePage = (): JSX.Element => {
         !isScoringInitialized ||
         !isScoringReportInitialized)
     ) {
-      const usePageNumber =
-        innerModelId !== modelId ? 1 : selectPageInfo?.pageNumber ?? 1;
-      const cursor = cursorsByPageNumber[usePageNumber]?.beginCursor ?? '';
-      const useCursor = usePageNumber === 1 ? '' : cursor ?? '';
-      const args = {
-        accessToken: stateAccessToken,
-        requestType: 'getRanked',
-        modelId,
-        modelInstance: modelStats.instance,
-        cursor: useCursor,
-        limit: selectPageInfo.limit,
-        pageNumber: usePageNumber,
-      };
-      dispatchRetrieveScores(args)
-        .then(() => {
-          if (!isScoringCountInitialized) {
-            dispatchRetrieveScoresCount(args);
-          }
-        })
-        .then(() => setInnerModelId(modelId));
+      retrieveScoresCallback({
+        inputCategories:
+          selectedCategories.length === 0 || innerModelId !== modelId
+            ? undefined
+            : selectedCategories,
+        inputSelectPageInfo: selectPageInfo,
+        inputCursorsByPageNumber: cursorsByPageNumber,
+      });
     }
   }, [
-    dispatch,
     innerModelId,
     setInnerModelId,
     modelId,
     modelStats,
-    stateAccessToken,
+    cookieAccessToken,
     isScoringInitialized,
     selectPageInfo,
     isScoringReportInitialized,
@@ -237,18 +396,138 @@ const HomePage = (): JSX.Element => {
     dispatchRetrieveScoresCount,
     isScoringCountInitialized,
     cursorsByPageNumber,
+    categories,
+    selectedCategories,
+    retrieveScoresCallback,
   ]);
 
   useEffect(() => {
-    if (stateAccessToken) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      dispatch(getEntities({ accessToken: stateAccessToken }));
+    if (!isStatusReviewedInitialized && cookieAccessToken) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        getYearStatuses({
+          accessToken: cookieAccessToken,
+          entityStatus: ENTITY_STATUS_REVIEWED,
+        })
+      );
     }
-  }, [stateAccessToken, dispatch]);
+  }, [dispatch, cookieAccessToken, isStatusReviewedInitialized]);
+
+  useEffect(() => {
+    if (!isStatusCaseOpenedInitialized && cookieAccessToken) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        getYearStatuses({
+          accessToken: cookieAccessToken,
+          entityStatus: ENTITY_STATUS_CASE_OPENED,
+        })
+      );
+    }
+  }, [dispatch, cookieAccessToken, isStatusCaseOpenedInitialized]);
+
+  useEffect(() => {
+    if (
+      modelStats &&
+      isRiskIndicatorConfigInitialized &&
+      (!isTopRiskIndicatorsInitialized || modelStats.modelId !== modelId) &&
+      cookieAccessToken
+    ) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        getTopRiskIndicators({
+          accessToken: cookieAccessToken,
+          modelId: modelStats.modelId,
+          instance: modelStats.instance,
+          limit: numberTopRiskIndicators,
+        })
+      );
+    }
+  }, [
+    dispatch,
+    cookieAccessToken,
+    modelId,
+    modelStats,
+    isTopRiskIndicatorsInitialized,
+    isRiskIndicatorConfigInitialized,
+    numberTopRiskIndicators,
+  ]);
+
+  useEffect(() => {
+    if (
+      modelStats &&
+      isScoringCountInitialized &&
+      isEntitiesConfigInitialized &&
+      (!isTriageInitialized || modelStats.modelId !== modelId) &&
+      cookieAccessToken
+    ) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        getTriageAndAverageScores({
+          accessToken: cookieAccessToken,
+          modelId: modelStats.modelId,
+          modelInstance: modelStats.instance,
+          fraction: homePageTopPercent,
+          cursor: '',
+          limit: scoringCount,
+        })
+      );
+    }
+  }, [
+    dispatch,
+    cookieAccessToken,
+    modelId,
+    modelStats,
+    isScoringCountInitialized,
+    isEntitiesConfigInitialized,
+    homePageTopPercent,
+    isTriageInitialized,
+    scoringCount,
+  ]);
+
+  useEffect(() => {
+    if (cookieAccessToken && !isGovernanceSystemMaskingInitialized) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        retrieveMaskingSystemStatus({ accessToken: cookieAccessToken })
+      );
+    }
+  }, [cookieAccessToken, isGovernanceSystemMaskingInitialized, dispatch]);
+
+  useEffect(() => {
+    if (cookieAccessToken && !isGovernanceEntitiestoMaskInitialized) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        retrieveMaskings({
+          accessToken: cookieAccessToken,
+          userId: '',
+        })
+      );
+    }
+  }, [cookieAccessToken, isGovernanceEntitiestoMaskInitialized, dispatch]);
+
+  if (!cookieAccessToken) {
+    return <LinearProgress />;
+  }
+
+  const { countTriaged, topCount, avgScore } =
+    triageAndAverageScoresByModelId ?? {
+      countTriaged: 0,
+      topCount: 0,
+      avgScore: 0,
+    };
 
   return (
-    <DashboardLayout title="Home" navbarBorder={true} navEls={<HomeNavbar />}>
+    <DashboardLayout
+      title="Home"
+      navbarBorder={true}
+      navEls={<HomeNavbar accessToken={cookieAccessToken} />}
+    >
       <UIContainer>
         <UIFlexWrapBox sx={{ gap: 2.5 }}>
           {statusCardsSelected &&
@@ -258,6 +537,12 @@ const HomePage = (): JSX.Element => {
                 <HomeStateCard cardInfo={card} key={index} />
               )
             )}
+          {reviewedStatsByStatus && (
+            <HomeStateCard cardInfo={reviewedStatsByStatus} />
+          )}
+          {caseOpenedStatsByStatus && (
+            <HomeStateCard cardInfo={caseOpenedStatsByStatus} />
+          )}
         </UIFlexWrapBox>
         <UIFlexSpaceBox
           sx={{
@@ -267,7 +552,12 @@ const HomePage = (): JSX.Element => {
           }}
         >
           <UIWhiteCard sx={{ width: '67%', alignItem: 'flex-start' }}>
-            <HomeBarChart />
+            <HomeBarChart
+              originalCategories={originalCategories}
+              originalCategoriesInitialized={originalCategoriesSet}
+              refreshCategories={refreshCategories}
+              setRefreshCategories={setRefreshCategories}
+            />
           </UIWhiteCard>
           <Box
             sx={{
@@ -278,36 +568,43 @@ const HomePage = (): JSX.Element => {
               justifyContent: 'space-between',
             }}
           >
-            <UIWhiteCard sx={{ height: '50%' }}>
-              <Typography variant="h6" color="text.secondary">
-                Top 1% of Individuals
-              </Typography>
+            {isTopRiskIndicatorsInitialized && modelId && (
+              <HomeRiskIndicator modelId={modelId} />
+            )}
+            {isTriageInitialized && triageAndAverageScoresByModelId && (
+              <UIWhiteCard sx={{ height: '50%' }}>
+                <Typography variant="h6" color="text.secondary">
+                  Top {roundScore(homePageTopPercent)}% of Individuals
+                </Typography>
 
-              <Box
-                sx={{ height: '100%' }}
-                display="flex"
-                justifyContent="space-between"
-              >
-                <Box sx={{ width: '50%' }}>
-                  <HomeDoughnutChart />
-                </Box>
-                <UIFlexCenterBox sx={{ width: '50%' }}>
-                  <Box
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="center"
-                  >
-                    <UIScoreChip
-                      sx={{ width: '38px', height: '38px', mb: 1 }}
-                      label={44}
-                      bgColor="#FF5722"
+                <Box
+                  sx={{ height: '100%' }}
+                  display="flex"
+                  justifyContent="space-between"
+                >
+                  <Box sx={{ width: '50%' }}>
+                    <HomeDoughnutChart
+                      triagedAmount={countTriaged}
+                      totalAmount={topCount}
                     />
-                    <Typography variant="h6">Average Score</Typography>
                   </Box>
-                </UIFlexCenterBox>
-              </Box>
-            </UIWhiteCard>
-            <HomeRiskIndicator />
+                  <UIFlexCenterBox sx={{ width: '50%' }}>
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="center"
+                    >
+                      <UIScoreChip
+                        sx={{ width: '38px', height: '38px', mb: 1 }}
+                        label={roundScore(avgScore)}
+                        bgColor={getScoreColor(roundScore(avgScore))}
+                      />
+                      <Typography variant="h6">Average Score</Typography>
+                    </Box>
+                  </UIFlexCenterBox>
+                </Box>
+              </UIWhiteCard>
+            )}
           </Box>
         </UIFlexSpaceBox>
         <UIFlexWrapBox
@@ -317,7 +614,7 @@ const HomePage = (): JSX.Element => {
             margin: (theme) => theme.spacing(2.5, 'auto'),
           }}
         >
-          <HomeUserTable />
+          <HomeUserTable accessToken={cookieAccessToken} />
         </UIFlexWrapBox>
       </UIContainer>
     </DashboardLayout>

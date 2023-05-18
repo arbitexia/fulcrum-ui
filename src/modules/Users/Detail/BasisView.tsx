@@ -8,7 +8,6 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { appImageLoader } from '@/libs/image-loader';
 import {
   Box,
   Table,
@@ -21,6 +20,8 @@ import {
   IconButton,
   LinearProgress,
 } from '@mui/material';
+
+import { appImageLoader } from '@/libs/image-loader';
 import {
   UIContainer,
   UIProfilePagination,
@@ -37,7 +38,6 @@ import {
   getDataSourcesConfigInitialized,
   getDataSourcesSelect,
   getSelectedModelId,
-  getAccessToken,
   getAttributeDataSourceIdSelector,
   scoringPageInfoSelector,
   getSelectedStats,
@@ -50,6 +50,7 @@ import {
   retrieveBasisCount,
   isScoringReportInitializedSelector,
   getAllCursorsByPageNumber,
+  downloadExcelFile,
 } from '@/redux/slices';
 import {
   PaginateParam,
@@ -68,20 +69,29 @@ import {
   getIsScoringCountInitialized,
   getScoringCount,
 } from '@/redux/slices/scoring.slice';
+import { ExcelRequestParam } from '@/types/risk.type';
+import { riskSelector } from '@/redux/slices/risk.slice';
+import config from '@/config';
+
+const riskUrl = config.URLS.RISK;
 
 const UserDetailBasisView = ({
   entityId,
   attributeId,
   isDataSourceChanged,
+  accessToken = null,
+  unmaskToken = null,
 }: {
   entityId: string;
   attributeId: string;
   isDataSourceChanged: boolean;
+  accessToken: string | null;
+  unmaskToken: string | null;
 }): JSX.Element => {
   type Order = 'asc' | 'desc';
   const dispatch = useAppDispatch();
   const modelId: string = useAppSelector(getSelectedModelId);
-  const modelStats: Stats = useAppSelector(getSelectedStats);
+  const modelStats: Stats | null = useAppSelector(getSelectedStats);
   const selectedBasisData: BasisPropertyType[] =
     useAppSelector(basisReportSelector);
   const selectBasisPageInfo: PaginateParam = useAppSelector(
@@ -109,10 +119,10 @@ const UserDetailBasisView = ({
     getAttributeDataSourceIdSelector(attributeId)
   );
   const stateResourceData = useAppSelector(getDataSourcesSelect);
-  const stateAccessToken = useAppSelector(getAccessToken);
   const isScoringStatusFailedValue = useAppSelector(isScoringStatusFailed);
   const isEntityStatusPendingValue = useAppSelector(isEntityStatusPending);
 
+  const excelDownloadData = useAppSelector(riskSelector);
   const [dataSourceId, setDataSourceId] = useState<string>('');
   const [cursor, setCursor] = useState<string>(
     selectBasisPageInfo?.beginCursor ?? ''
@@ -180,6 +190,20 @@ const UserDetailBasisView = ({
     [dispatch]
   );
 
+  const dispatchDownloadExcel = useCallback(
+    (arg: ExcelRequestParam): Promise<unknown> => {
+      return new Promise<void>((resolve) => {
+        dispatch(
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          downloadExcelFile(arg)
+        );
+        resolve();
+      });
+    },
+    [dispatch]
+  );
+
   const dispatchRetrieveBasis = useCallback(
     ({
       dispatchModelId,
@@ -196,9 +220,9 @@ const UserDetailBasisView = ({
       dispatchCursor: string;
       dispatchLimit: number;
     }): void => {
-      if (stateAccessToken) {
+      if (accessToken) {
         const args = {
-          accessToken: stateAccessToken,
+          accessToken,
           entityId: dispatchEntityId,
           dataSourceId: dispatchDataSourceId,
           modelId: dispatchModelId,
@@ -206,6 +230,7 @@ const UserDetailBasisView = ({
           cursor: dispatchCursor,
           pageNumber,
           limit: dispatchLimit,
+          unmaskToken: unmaskToken ?? '',
         };
         dispatchRetrieveBasisPromise(args).then(() => {
           if (!isScoringCountInitialized) {
@@ -215,7 +240,8 @@ const UserDetailBasisView = ({
       }
     },
     [
-      stateAccessToken,
+      accessToken,
+      unmaskToken,
       pageNumber,
       dispatchRetrieveBasisPromise,
       dispatchRetrieveScoresCountPromise,
@@ -289,9 +315,13 @@ const UserDetailBasisView = ({
         }
       });
     });
+
+    const storageArray = localStorage.getItem('basis_risk');
     const sortedArray = Array.from(activeBasisKeys).sort();
     const idIndex = sortedArray.indexOf('id');
-    if (idIndex > 0) {
+    if (storageArray) {
+      setBasisKeys(JSON.parse(storageArray));
+    } else if (idIndex > 0) {
       const idFirstArray = [
         sortedArray[idIndex],
         ...sortedArray.slice(0, idIndex),
@@ -318,6 +348,14 @@ const UserDetailBasisView = ({
     isDataSourceChanged,
     dispatchChangeDataSourceId,
   ]);
+
+  useEffect(() => {
+    const { downloadStatus } = excelDownloadData;
+    if (riskUrl && downloadStatus && downloadStatus.url) {
+      const downloadLink = `${riskUrl}/download/${downloadStatus?.url}/`;
+      window.open(downloadLink, '_blank', 'noopener,noreferrer');
+    }
+  }, [excelDownloadData]);
 
   const descendingComparator = (
     a: BasisPropertyType,
@@ -386,6 +424,35 @@ const UserDetailBasisView = ({
   const useScoringCount = scoringCount ?? 0;
   const maxPageNumber = Math.ceil(useScoringCount / useLimit);
 
+  const handleDragStart = (e: React.DragEvent<HTMLTableCellElement>): void => {
+    const id = (e.target as HTMLInputElement).id;
+    const scoreBasisId = id as keyof ScoreBasisResult;
+    const idx = basisKeys?.indexOf(scoreBasisId) ?? 0;
+    e.dataTransfer.setData('colIdx', idx.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTableCellElement>): void =>
+    e.preventDefault();
+
+  const handleOnDrop = (e: React.DragEvent<HTMLTableCellElement>): void => {
+    let id = (e.target as HTMLInputElement).id || undefined;
+    if (!id) {
+      const parent = (e.target as HTMLInputElement).parentElement;
+      id = parent?.id;
+    }
+
+    if (basisKeys && id) {
+      const scoreBasisId = id as keyof ScoreBasisResult;
+      const droppedColIdx: number = basisKeys.indexOf(scoreBasisId);
+      const draggedColIdx: number = parseInt(e.dataTransfer.getData('colIdx'));
+      const tempCols = [...basisKeys];
+      tempCols[draggedColIdx] = basisKeys[droppedColIdx];
+      tempCols[droppedColIdx] = basisKeys[draggedColIdx];
+      setBasisKeys(tempCols);
+      localStorage.setItem('basis_risk', JSON.stringify(tempCols));
+    }
+  };
+
   return (
     <Box sx={{ background: '#FFFFFF' }}>
       <UIContainer>
@@ -411,7 +478,7 @@ const UserDetailBasisView = ({
                 value={dataSourceId}
                 onChange={handleSelectChange}
                 textColor="#39474E"
-                width="200px"
+                width="300px"
                 height="36px"
               >
                 {stateResourceData.map((item, index) => {
@@ -427,7 +494,12 @@ const UserDetailBasisView = ({
               <Checkbox sx={{ width: '32px', height: '32px' }} />
               Show all data
             </UIFlexCenterBox>
-            <UIFlexCenterBox sx={{ marginLeft: '40px' }}>
+          </UIFlexCenterBox>
+          <UIFlexCenterBox>
+            <UIFlexCenterBox>
+              Total Record Count: {useScoringCount}
+            </UIFlexCenterBox>
+            <UIFlexCenterBox sx={{ marginLeft: '40px', marginRight: '40px' }}>
               <UIProfilePagination
                 pageNumber={usePageNumber}
                 pageCount={maxPageNumber}
@@ -451,10 +523,12 @@ const UserDetailBasisView = ({
             </UIFlexCenterBox>
           </UIFlexCenterBox>
           <UIFlexCenterBox>
-            Total Record Count: {useScoringCount}
-          </UIFlexCenterBox>
-          <UIFlexCenterBox>
-            <IconButton>
+            <IconButton
+              onClick={() => {
+                const uuid = new Date().getTime();
+                dispatchDownloadExcel({ userId: '1', uuid: uuid.toString() });
+              }}
+            >
               <Image
                 src={'images/icons/xls.svg'}
                 loader={appImageLoader}
@@ -463,21 +537,14 @@ const UserDetailBasisView = ({
                 alt="pdf"
               />
             </IconButton>
-            <IconButton>
-              <Image
-                src={'images/icons/settings.svg'}
-                loader={appImageLoader}
-                width={24}
-                height={24}
-                alt="pdf"
-              />
-            </IconButton>
           </UIFlexCenterBox>
         </UIFlexSpaceBox>
-        <Box sx={{ marginTop: '20px' }}>
-          <Table size="small">
+        <Box
+          sx={{ marginTop: '20px', overflowX: 'scroll', overflowY: 'scroll' }}
+        >
+          <Table size="small" sx={{ overflowX: 'scroll', overflowY: 'scroll' }}>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ overflowX: 'scroll', overflowY: 'scroll' }}>
                 {basisKeys &&
                   basisKeys.map((key: keyof BasisPropertyType) => {
                     const formattedKey: string = formatKey(key as string, [
@@ -487,8 +554,11 @@ const UserDetailBasisView = ({
                     return (
                       <TableCell
                         align="center"
-                        width="250px"
                         key={`${key}-header`}
+                        draggable
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
+                        onDrop={handleOnDrop}
                       >
                         <TableSortLabel
                           active={orderBy === key}
@@ -502,14 +572,14 @@ const UserDetailBasisView = ({
                   })}
               </TableRow>
             </TableHead>
-            <TableBody>
+            <TableBody sx={{ overflowX: 'scroll', overflowY: 'scroll' }}>
               {basisData &&
                 stableSort<BasisPropertyType>(
                   basisData,
                   getComparator(order, orderBy)
-                ).map((row) => (
+                ).map(([row, _]) => (
                   <TableRow
-                    key={row.id}
+                    key={row.id as string}
                     sx={{ borderBottom: '1px solid #ECEFF1' }}
                   >
                     {basisKeys &&
@@ -518,8 +588,7 @@ const UserDetailBasisView = ({
                         return (
                           <TableCell
                             align="center"
-                            height="48px"
-                            width="250px"
+                            height="40px"
                             key={`${key}-${index}-value`}
                           >
                             {value}

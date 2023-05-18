@@ -38,7 +38,6 @@ import {
   retrieveGraphData,
   graphChartDataSelector,
   getGraphDataSelector,
-  getAccessToken,
 } from '@/redux/slices';
 import { GraphDataType } from '@/types';
 import { useRouter } from 'next/router';
@@ -117,12 +116,12 @@ export const GraphChartModal = ({
   open,
   onClose,
   attribute,
+  accessToken = null,
 }: GraphModalProps): JSX.Element => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { query, isReady } = router;
   const { id: entityId = '' } = query as { id: string };
-  const stateAccessToken = useAppSelector(getAccessToken);
   const graphChartData: ChartData<
     'line',
     (number | ScatterDataPoint | BubbleDataPoint | null)[]
@@ -137,18 +136,18 @@ export const GraphChartModal = ({
     >(graphChartData);
 
   useEffect(() => {
-    if (isReady && entityId && stateAccessToken && attribute) {
+    if (open && isReady && entityId && accessToken && attribute) {
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         retrieveGraphData({
-          accessToken: stateAccessToken,
+          accessToken,
           entityId,
           attributeId: attribute,
         })
       );
     }
-  }, [dispatch, isReady, entityId, stateAccessToken, attribute]);
+  }, [dispatch, open, isReady, accessToken, entityId, attribute]);
 
   useEffect(() => {
     setChartData(graphChartData);

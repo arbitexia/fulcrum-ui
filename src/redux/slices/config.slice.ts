@@ -20,6 +20,8 @@ import { AxiosError } from 'axios';
 import {
   EntitiesDescriptorConfig,
   GetEntitiesConfigParams,
+  GetRiskIndicatorConfigParams,
+  RiskIndicatorConfig,
 } from '@/types/config.type';
 import { keyComparator } from '@/libs/sort-utils';
 import { checkAuthToken } from '@/libs/auth-token';
@@ -42,6 +44,17 @@ const initialState: ReduxJson.ConfigState = {
       default: 'new',
       values: [],
     },
+    entityMaskingValues: {
+      default: 'in-review',
+      values: [],
+    },
+    homePageTopPercent: 0.01,
+  },
+  riskIndicators: {
+    loading: false,
+    status: null,
+    initialized: false,
+    topNumberRiskIndicators: 10,
   },
 };
 
@@ -69,6 +82,20 @@ export const retrieveEntitiesConfig = createAsyncThunk<
     // TODO - define the api auth token
     await checkAuthToken();
     return await configApi.loadEntitiesDisplayConfig(params);
+  } catch (error) {
+    const err = error as AxiosError;
+    return thunkAPI.rejectWithValue(err.response?.data);
+  }
+});
+
+export const retrieveRiskIndicatorsConfig = createAsyncThunk<
+  RiskIndicatorConfig,
+  GetRiskIndicatorConfigParams,
+  { dispatch: AppDispatch; state: RootState }
+>('config/retrieveRiskIndicatorsConfig', async (params, thunkAPI) => {
+  try {
+    // TODO - define the api auth token
+    return await configApi.loadRiskIndicatorsConfig(params);
   } catch (error) {
     const err = error as AxiosError;
     return thunkAPI.rejectWithValue(err.response?.data);
@@ -144,12 +171,16 @@ const configSlice = createSlice({
             entityProperties,
             entityDetailProperties,
             entityStatusValues,
+            entityMaskingValues,
+            homePageTopPercent,
           } = payload;
           state.entities.loading = false;
           state.entities.initialized = true;
           state.entities.entityProperties = entityProperties;
           state.entities.entityDetailProperties = entityDetailProperties;
           state.entities.entityStatusValues = entityStatusValues;
+          state.entities.entityMaskingValues = entityMaskingValues;
+          state.entities.homePageTopPercent = homePageTopPercent;
           state.entities.status = ResponseStatus.SUCCESS;
         }
       )
@@ -159,6 +190,29 @@ const configSlice = createSlice({
         state.entities.entityProperties = [];
         state.entities.entityDetailProperties = [];
         state.entities.status = ResponseStatus.FAILED;
+      })
+      .addCase(retrieveRiskIndicatorsConfig.pending, (state) => {
+        state.riskIndicators.loading = true;
+        state.riskIndicators.initialized = false;
+        state.riskIndicators.topNumberRiskIndicators = 0;
+        state.riskIndicators.status = ResponseStatus.PENDING;
+      })
+      .addCase(
+        retrieveRiskIndicatorsConfig.fulfilled,
+        (state, { payload }: PayloadAction<RiskIndicatorConfig>) => {
+          const { topNumberRiskIndicators } = payload;
+          state.riskIndicators.loading = false;
+          state.riskIndicators.initialized = true;
+          state.riskIndicators.topNumberRiskIndicators =
+            topNumberRiskIndicators;
+          state.riskIndicators.status = ResponseStatus.SUCCESS;
+        }
+      )
+      .addCase(retrieveRiskIndicatorsConfig.rejected, (state) => {
+        state.riskIndicators.loading = false;
+        state.riskIndicators.initialized = false;
+        state.riskIndicators.topNumberRiskIndicators = 0;
+        state.riskIndicators.status = ResponseStatus.FAILED;
       });
   },
 });
@@ -184,9 +238,31 @@ export const getEntityProperties = (state: RootState): EntityProperty[] =>
 export const getEntityDetailProperties = (state: RootState): EntityProperty[] =>
   state.config.entities.entityDetailProperties;
 
-export const geEntityStatusValues = (
+export const getEntityStatusValues = (
   state: RootState
 ): { default: string; values: EntityProperty[] } =>
   state.config.entities.entityStatusValues;
+
+export const getEntityMaskingValues = (
+  state: RootState
+): { default: string; values: EntityProperty[] } =>
+  state.config.entities.entityMaskingValues;
+
+export const getEntityMaskingValuesDefaultStatus = (state: RootState): string =>
+  state.config.entities.entityMaskingValues.default;
+
+export const entityMaskingIcons: { [status: string]: string } = {
+  none: 'images/icons/eye.svg',
+  'in-review': 'images/icons/sending.svg',
+};
+
+export const getHomePageTopPercent = (state: RootState): number =>
+  state?.config?.entities?.homePageTopPercent ?? 0;
+
+export const getRiskIndicatorsConfigInitialized = (state: RootState): boolean =>
+  state?.config?.riskIndicators?.initialized ?? false;
+
+export const getNumberTopRiskIndicators = (state: RootState): number =>
+  state?.config?.riskIndicators?.topNumberRiskIndicators ?? 10;
 
 export default configSlice.reducer;

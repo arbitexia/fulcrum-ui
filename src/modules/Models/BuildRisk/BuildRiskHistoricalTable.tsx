@@ -13,49 +13,58 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
-  InputAdornment,
+  // InputAdornment,
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
-import { RiskHistoricalTableDataType } from '@/types';
+// import { Search as SearchIcon } from '@mui/icons-material';
 import { StyledNoBorderCell, StyledBorderCell } from '../ui';
-import { riskHistoricalTableData } from '@/_mock';
-import { UIDefaultTextField } from '@/components/UI';
+// import { UIDefaultTextField } from '@/components/UI';
 import { stableSort } from '@/libs/sort-utils';
+import { UniqueValueCountDisplay } from '@/types/stats.type';
 
-const BuildRiskHistoricalTable = (): JSX.Element => {
+const BuildRiskHistoricalTable = ({
+  uniqueValueCounts,
+  isNumeric,
+}: {
+  uniqueValueCounts: UniqueValueCountDisplay[];
+  isNumeric: boolean;
+}): JSX.Element => {
   type Order = 'asc' | 'desc';
-  const [order, setOrder] = useState<Order>('asc');
+  const [order, setOrder] = useState<Order>('desc');
   const [orderBy, setOrderBy] =
-    useState<keyof RiskHistoricalTableDataType>('value');
-  const [tableList, setTableList] = useState<
-    RiskHistoricalTableDataType[] | null
-  >(null);
+    useState<keyof UniqueValueCountDisplay>('occurrence');
+  const [tableList, setTableList] = useState<UniqueValueCountDisplay[] | null>(
+    null
+  );
 
   useEffect(() => {
-    setTableList(riskHistoricalTableData);
-  }, [setTableList]);
+    setTableList(uniqueValueCounts);
+  }, [setTableList, uniqueValueCounts]);
 
-  const descendingComparator = <RiskHistoricalTableDataType,>(
-    a: RiskHistoricalTableDataType,
-    b: RiskHistoricalTableDataType,
-    comparatorOrderBy: keyof RiskHistoricalTableDataType
+  const descendingComparator = <UniqueValueCountDisplay,>(
+    a: UniqueValueCountDisplay,
+    b: UniqueValueCountDisplay,
+    comparatorOrderBy: keyof UniqueValueCountDisplay
   ): number => {
-    if (b[comparatorOrderBy] < a[comparatorOrderBy]) {
+    const aVal = isNumeric
+      ? parseInt(a[comparatorOrderBy] as unknown as string)
+      : a[comparatorOrderBy];
+    const bVal = isNumeric
+      ? parseInt(b[comparatorOrderBy] as unknown as string)
+      : b[comparatorOrderBy];
+
+    if (bVal < aVal) {
       return -1;
     }
-    if (b[comparatorOrderBy] > a[comparatorOrderBy]) {
+    if (bVal > aVal) {
       return 1;
     }
     return 0;
   };
 
-  const getComparator = <Key extends keyof RiskHistoricalTableDataType>(
+  const getComparator = <Key extends keyof UniqueValueCountDisplay>(
     comparatorOrder: Order,
     comparatorOrderBy: Key
-  ): ((
-    a: RiskHistoricalTableDataType,
-    b: RiskHistoricalTableDataType
-  ) => number) => {
+  ): ((a: UniqueValueCountDisplay, b: UniqueValueCountDisplay) => number) => {
     return comparatorOrder === 'desc'
       ? (a, b) => descendingComparator(a, b, comparatorOrderBy)
       : (a, b) => -descendingComparator(a, b, comparatorOrderBy);
@@ -63,7 +72,7 @@ const BuildRiskHistoricalTable = (): JSX.Element => {
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
-    property: keyof RiskHistoricalTableDataType
+    property: keyof UniqueValueCountDisplay
   ): void => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
@@ -71,7 +80,7 @@ const BuildRiskHistoricalTable = (): JSX.Element => {
   };
 
   const createSortHandler =
-    (property: keyof RiskHistoricalTableDataType) =>
+    (property: keyof UniqueValueCountDisplay) =>
     (event: React.MouseEvent<unknown>) => {
       handleRequestSort(event, property);
     };
@@ -92,29 +101,29 @@ const BuildRiskHistoricalTable = (): JSX.Element => {
               >
                 Value
               </TableSortLabel>
-              <UIDefaultTextField
-                id="input-with-icon-textfield"
-                placeholder="filter"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-                variant="standard"
-                sx={{
-                  mt: 2,
-                  width: '170px',
-                  input: {
-                    color: '#2E2C34',
-                    fontSize: 14,
-                    '&::placeholder': {
-                      fontStyle: 'italic',
-                    },
-                  },
-                }}
-              />
+              {/*<UIDefaultTextField*/}
+              {/*  id="input-with-icon-textfield"*/}
+              {/*  placeholder="filter"*/}
+              {/*  InputProps={{*/}
+              {/*    startAdornment: (*/}
+              {/*      <InputAdornment position="start">*/}
+              {/*        <SearchIcon />*/}
+              {/*      </InputAdornment>*/}
+              {/*    ),*/}
+              {/*  }}*/}
+              {/*  variant="standard"*/}
+              {/*  sx={{*/}
+              {/*    mt: 2,*/}
+              {/*    width: '170px',*/}
+              {/*    input: {*/}
+              {/*      color: '#2E2C34',*/}
+              {/*      fontSize: 14,*/}
+              {/*      '&::placeholder': {*/}
+              {/*        fontStyle: 'italic',*/}
+              {/*      },*/}
+              {/*    },*/}
+              {/*  }}*/}
+              {/*/>*/}
             </StyledNoBorderCell>
             <StyledNoBorderCell
               align="right"
@@ -137,12 +146,12 @@ const BuildRiskHistoricalTable = (): JSX.Element => {
         </TableHead>
         <TableBody>
           {tableList &&
-            stableSort<RiskHistoricalTableDataType>(
+            stableSort<UniqueValueCountDisplay>(
               tableList,
               getComparator(order, orderBy)
-            ).map((row) => {
+            ).map(([row, _], index) => {
               return (
-                <TableRow sx={{ background: '#ffffff' }} key={row.id}>
+                <TableRow sx={{ background: '#ffffff' }} key={index}>
                   <StyledBorderCell
                     sx={{ fontSize: '14px', paddingLeft: '30px' }}
                   >

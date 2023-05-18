@@ -10,26 +10,30 @@ import React, { ChangeEvent } from 'react';
 import {
   UIContainer,
   UIDefaultTextField,
-  UIModalButton,
   UIFlexWrapBox,
+  UIDefaultButton,
 } from '@/components/UI';
-import { Box, InputLabel, Typography } from '@mui/material';
+import { Box, InputLabel, LinearProgress, Typography } from '@mui/material';
 import { Model } from '@/types';
-import { useAppDispatch, useAppSelector } from '@/hooks';
-import {
-  getAccessToken,
-  modelValueChangeHandler,
-  saveModel,
-} from '@/redux/slices';
+import { useAppDispatch } from '@/hooks';
+import { modelValueChangeHandler, saveModel } from '@/redux/slices';
 import { NewModelParams } from '@/types/models.type';
 import { noop } from 'lodash';
 import { useRouter } from 'next/router';
 
-const BuildModelNavbar = ({ model }: { model: Model | null }): JSX.Element => {
+const BuildModelNavbar = ({
+  model,
+  accessToken = null,
+}: {
+  model: Model | null;
+  accessToken: string | null;
+}): JSX.Element => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const id = (model && model.id) || null;
-  const stateAccessToken = useAppSelector(getAccessToken);
+
+  if (!model) {
+    return <LinearProgress />;
+  }
 
   const handleInputChange = (
     event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>,
@@ -64,27 +68,34 @@ const BuildModelNavbar = ({ model }: { model: Model | null }): JSX.Element => {
     const newModel =
       modelId && modelId === 'NEW' ? { ...model, id: null } : model;
     const modelJson = JSON.stringify(newModel);
-    if (stateAccessToken) {
+    if (accessToken) {
       dispatchSave({
-        accessToken: stateAccessToken,
+        accessToken,
         modelJson,
         author: 'Diego Martinez',
         modelId: modelId === 'NEW' ? '' : modelId,
         lastUpdateDate: Date.now(),
+        active: true,
       }).then(() => router.push('/configuration/model').then(noop));
     }
   };
 
+  const id = (model && model.id) || null;
+
   return (
-    <UIContainer>
+    <UIContainer
+      disableGutters
+      sx={{ paddingTop: '27px', paddingLeft: '36px' }}
+    >
       <Typography variant="h4" sx={{ mr: 4 }}>
         Build a Model
       </Typography>
-      <UIFlexWrapBox sx={{ alignItems: 'flex-end', mt: 2 }}>
+      <UIFlexWrapBox sx={{ alignItems: 'flex-end', mt: 2, gap: 4 }}>
         <Box>
           <InputLabel variant="standard" htmlFor="model-input-helper">
             <Typography
               sx={{
+                mb: 1,
                 fontWeight: '400',
                 fontSize: '13px',
                 lineHeight: '20px',
@@ -95,7 +106,8 @@ const BuildModelNavbar = ({ model }: { model: Model | null }): JSX.Element => {
             </Typography>
           </InputLabel>
           <UIDefaultTextField
-            value={model?.name ?? ''}
+            defaultValue={model.name || ''}
+            sx={{ width: '432px' }}
             id="model-input-helper"
             variant="standard"
             onChange={(event) =>
@@ -110,6 +122,7 @@ const BuildModelNavbar = ({ model }: { model: Model | null }): JSX.Element => {
           <InputLabel variant="standard" htmlFor="desc-input-helper">
             <Typography
               sx={{
+                mb: 1,
                 fontWeight: '400',
                 fontSize: '13px',
                 lineHeight: '20px',
@@ -120,10 +133,10 @@ const BuildModelNavbar = ({ model }: { model: Model | null }): JSX.Element => {
             </Typography>
           </InputLabel>
           <UIDefaultTextField
-            value={model?.description ?? ''}
+            defaultValue={model.description || ''}
             id="desc-input-helper"
             variant="standard"
-            sx={{ width: '600px', input: { color: '#2E2C34' } }}
+            sx={{ width: '576px', input: { color: '#2E2C34' } }}
             onChange={(event) =>
               handleInputChange(event, {
                 operation: 'changeModelDescription',
@@ -132,12 +145,12 @@ const BuildModelNavbar = ({ model }: { model: Model | null }): JSX.Element => {
             }
           />
         </Box>
-        <UIModalButton
+        <UIDefaultButton
           sx={{ fontWeight: 400 }}
-          onClick={stateAccessToken ? handleSave : noop}
+          onClick={accessToken ? handleSave : noop}
         >
           Save
-        </UIModalButton>
+        </UIDefaultButton>
       </UIFlexWrapBox>
     </UIContainer>
   );

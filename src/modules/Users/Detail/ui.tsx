@@ -88,11 +88,13 @@ export const StyledLegendWrapper = styled(Box)({
 
 interface StyledPeerChipProps {
   bgColor: string;
+  label: string;
   onClick: () => void; // React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const StyledPeerChip = ({
   bgColor,
+  label,
   ...rest
 }: StyledPeerChipProps): JSX.Element => {
   return (
@@ -130,7 +132,7 @@ export const StyledPeerChip = ({
           paddingRight: 1,
         }}
       >
-        Peer Compare
+        {label}
       </Typography>
     </UIFlexSpaceBox>
   );

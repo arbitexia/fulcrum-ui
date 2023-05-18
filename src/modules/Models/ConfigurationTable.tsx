@@ -6,34 +6,52 @@
 /**
  * Author: Diego Martinez
  */
+
 import React, { useEffect, useState } from 'react';
 import {
-  Box,
   Table,
   TableBody,
   TableHead,
   TableRow,
   TableSortLabel,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import Image from 'next/image';
 import { appImageLoader } from '@/libs/image-loader';
-import { StyledNoBorderCell, StyledBorderCell } from './ui';
+import { StyledBorderCell } from './ui';
 import { stableSort } from '@/libs/sort-utils';
-import { UIFlexCenterBox, UIFlexWrapBox } from '@/components/UI';
-import { ConfigurationTableType } from '@/types/models.type';
+import { UIFlexWrapBox, UINoBorderCell, UIIOSSwitch } from '@/components/UI';
+import {
+  ConfigurationTableType,
+  Model,
+  NewModelParams,
+} from '@/types/models.type';
+import { formatKey } from '@/libs/string-utils';
+import { formatDate } from '@/libs/time-utils';
+import { noop } from 'lodash';
+import { modifyModel } from '@/redux/slices';
+import { useAppDispatch } from '@/hooks';
 
 const ConfigurationTable = ({
   data,
   url,
   actions,
   onActionClick,
+  accessToken,
 }: {
   data: ConfigurationTableType[];
   url: string;
   actions: string[];
-  onActionClick: (url: string, action: string, id: number | string) => void;
+  onActionClick: (
+    url: string,
+    action: string,
+    id: number | string,
+    name?: string
+  ) => void;
+  accessToken: string;
 }): JSX.Element => {
+  const dispatch = useAppDispatch();
   type Order = 'asc' | 'desc';
   const firstItem = data && data.length > 0 && data[0];
 
@@ -47,13 +65,67 @@ const ConfigurationTable = ({
     null
   );
 
-  const onAction = (action: string, id: number | string): void => {
-    onActionClick(url, action, id);
+  const onAction = (
+    action: string,
+    id: number | string,
+    name?: string
+  ): void => {
+    onActionClick(url, action, id, name);
   };
 
   useEffect(() => {
     setTableList(data);
   }, [data]);
+
+  const dispatchModify = (args: NewModelParams): Promise<unknown> => {
+    return new Promise<void>((resolve) => {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        modifyModel(args)
+      );
+      resolve();
+    });
+  };
+
+  const changeList = (
+    index: number,
+    newTableItem: ConfigurationTableType
+  ): void => {
+    setTableList((prevTableList: ConfigurationTableType[] | null) => {
+      if (prevTableList !== null) {
+        const newTableList: ConfigurationTableType[] = [...prevTableList];
+        newTableList[index] = newTableItem;
+        return newTableList;
+      }
+      return null;
+    });
+  };
+
+  const handleSave: (model: Model, index: number) => void = (
+    model: Model,
+    index: number
+  ) => {
+    const modelId = (model && model?.id) ?? 'NEW';
+    const oldActiveFlag = model.active ?? false;
+    const newModel =
+      modelId && modelId === 'NEW'
+        ? { ...model, id: null, active: !oldActiveFlag }
+        : { ...model, active: !oldActiveFlag };
+    const modelJson = JSON.stringify(newModel);
+    if (accessToken) {
+      dispatchModify({
+        accessToken,
+        modelJson,
+        author: 'Diego Martinez',
+        modelId: modelId === 'NEW' ? '' : modelId,
+        lastUpdateDate: Date.now(),
+        active: !oldActiveFlag,
+      })
+        .then(() => changeList(index, newModel))
+        .then(noop);
+    }
+  };
 
   const descendingComparator = <ModelsTableDataType, Model, RiskIndicatorType>(
     a: ModelsTableDataType | Model | RiskIndicatorType,
@@ -89,124 +161,151 @@ const ConfigurationTable = ({
 
   const createSortHandler =
     (property: keyof ConfigurationTableType) =>
-      (event: React.MouseEvent<unknown>) => {
-        handleRequestSort(event, property);
-      };
+    (event: React.MouseEvent<unknown>) => {
+      handleRequestSort(event, property);
+    };
 
   return (
-    <>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <StyledNoBorderCell>
-              <TableSortLabel
-                active={orderBy === nameOrderKey}
-                direction={order}
-                onClick={createSortHandler(
-                  nameOrderKey as keyof ConfigurationTableType
-                )}
-              >
-                Name
-              </TableSortLabel>
-            </StyledNoBorderCell>
-            <StyledNoBorderCell>Description</StyledNoBorderCell>
-            <StyledNoBorderCell>
-              <TableSortLabel
-                active={orderBy === 'owner'}
-                direction={order}
-                onClick={createSortHandler('owner')}
-              >
-                Owner
-              </TableSortLabel>
-            </StyledNoBorderCell>
-            <StyledNoBorderCell>
-              <TableSortLabel
-                active={orderBy === 'lastUpdate'}
-                direction={order}
-                onClick={createSortHandler('lastUpdate')}
-              >
-                Last Update
-              </TableSortLabel>
-            </StyledNoBorderCell>
-            {tableList && tableList[0]?.status && (
-              <StyledNoBorderCell align="center">
-                <TableSortLabel
-                  active={orderBy === 'status'}
-                  direction={order}
-                  onClick={createSortHandler('status')}
-                >
-                  Scoring Status
-                </TableSortLabel>
-              </StyledNoBorderCell>
-            )}
-            <StyledNoBorderCell>Actions</StyledNoBorderCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <UINoBorderCell>
+            <TableSortLabel
+              active={orderBy === nameOrderKey}
+              direction={order}
+              onClick={createSortHandler(
+                nameOrderKey as keyof ConfigurationTableType
+              )}
+            >
+              Name
+            </TableSortLabel>
+          </UINoBorderCell>
+          <UINoBorderCell>Description</UINoBorderCell>
+          <UINoBorderCell>
+            <TableSortLabel
+              active={orderBy === 'owner'}
+              direction={order}
+              onClick={createSortHandler('owner')}
+            >
+              Owner
+            </TableSortLabel>
+          </UINoBorderCell>
+          <UINoBorderCell>
+            <TableSortLabel
+              active={orderBy === 'lastUpdate'}
+              direction={order}
+              onClick={createSortHandler('lastUpdate')}
+            >
+              Last Update
+            </TableSortLabel>
+          </UINoBorderCell>
           {tableList &&
-            stableSort<ConfigurationTableType>(
-              tableList,
-              getComparator(order, orderBy)
-            ).map((row) => {
-              const rowKey = 'id' in row ? row.id : row.listId;
-              return (
-                <TableRow
-                  sx={{
-                    background: '#ffffff',
-                    '&:hover': { background: '#acacac' },
-                  }}
-                  key={rowKey}
+            (tableList[0]?.active === true ||
+              tableList[0]?.active === false) && (
+              <UINoBorderCell align="center">
+                <TableSortLabel
+                  active={orderBy === 'active'}
+                  direction={order}
+                  onClick={createSortHandler('active')}
                 >
-                  <StyledBorderCell
-                    sx={{ height: '50px', fontWeight: 700, fontSize: '14px' }}
-                  >
-                    {row && 'listId' in row ? row.listId : row.name}
-                  </StyledBorderCell>
-                  <StyledBorderCell sx={{ fontSize: '13px' }}>
-                    {row.description || ''}
-                  </StyledBorderCell>
+                  Active
+                </TableSortLabel>
+              </UINoBorderCell>
+            )}
+          <UINoBorderCell>Actions</UINoBorderCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {tableList &&
+          stableSort<ConfigurationTableType>(
+            tableList,
+            getComparator(order, orderBy)
+          ).map(([row, _], rowIndex) => {
+            const rowKey = 'id' in row ? row.id : row.listId;
+            return (
+              <TableRow
+                sx={{
+                  maxHeight: '50px',
+                  background: '#ffffff',
+                  '&:hover': { background: '#eceff1' },
+                }}
+                key={rowKey}
+              >
+                <StyledBorderCell
+                  sx={{
+                    height: '50px',
+                    fontWeight: 400,
+                    fontSize: '14px',
+                    maxHeight: '50px',
+                    maxWidth: '250px',
+                    whiteSpace: 'nowrap',
+                    overflowX: 'scroll',
+                    overflowY: 'hidden',
+                  }}
+                >
+                  {row && 'listId' in row ? row.listId : row.name}
+                </StyledBorderCell>
+                <StyledBorderCell
+                  sx={{
+                    fontSize: '13px',
+                    maxHeight: '50px',
+                    maxWidth: '600px',
+                    whiteSpace: 'nowrap',
+                    overflowX: 'scroll',
+                    overflowY: 'hidden',
+                  }}
+                >
+                  {row.description || ''}
+                </StyledBorderCell>
+                <StyledBorderCell
+                  sx={{
+                    fontSize: '14px',
+                    maxHeight: '50px',
+                    overflowX: 'scroll',
+                    overflowY: 'hidden',
+                  }}
+                >
+                  {row.owner || ''}
+                </StyledBorderCell>
+                {row.lastUpdate && (
                   <StyledBorderCell sx={{ fontSize: '14px' }}>
-                    {row.owner || ''}
+                    {formatDate(new Date(row.lastUpdate))}
                   </StyledBorderCell>
+                )}
+                {!row.lastUpdate && (
                   <StyledBorderCell sx={{ fontSize: '14px' }}>
-                    {row.lastUpdate || ''}
+                    {''}
                   </StyledBorderCell>
-                  {row.status && (
-                    <StyledBorderCell>
-                      <UIFlexCenterBox>
-                        <UIFlexWrapBox
-                          sx={{
-                            width: 90,
-                            alignItems: 'center',
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              content: '""',
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              background:
-                                row.status === 'Active' ? '#00AC65' : '#C62828',
-                            }}
-                          ></Box>
-                          {row.status}
-                        </UIFlexWrapBox>
-                      </UIFlexCenterBox>
-                    </StyledBorderCell>
-                  )}
+                )}
+                {(row.active === true || row.active === false) && (
                   <StyledBorderCell>
-                    {actions.map((item, index) => {
-                      return (
+                    <UIFlexWrapBox>
+                      <UIIOSSwitch
+                        sx={{ marginLeft: '20px' }}
+                        size="small"
+                        checked={row.active}
+                        onChange={() => handleSave(row as Model, rowIndex)}
+                      />
+                    </UIFlexWrapBox>
+                  </StyledBorderCell>
+                )}
+                <StyledBorderCell>
+                  {actions.map((item, actionIndex) => {
+                    return (
+                      <Tooltip
+                        title={formatKey(item)}
+                        key={actionIndex}
+                        placement="bottom"
+                        style={{ cursor: 'pointer' }}
+                      >
                         <IconButton
                           disableRipple
-                          key={index}
                           onClick={() => {
                             if (row) {
                               if ('listId' in row && row.listId) {
-                                onAction(item, row.listId);
+                                onAction(item, row.listId, row.listId);
                               } else if ('id' in row && row.id) {
-                                onAction(item, row.id);
+                                onAction(item, row.id, row.name);
                               }
                             }
                           }}
@@ -219,15 +318,15 @@ const ConfigurationTable = ({
                             alt={item}
                           />
                         </IconButton>
-                      );
-                    })}
-                  </StyledBorderCell>
-                </TableRow>
-              );
-            })}
-        </TableBody>
-      </Table>
-    </>
+                      </Tooltip>
+                    );
+                  })}
+                </StyledBorderCell>
+              </TableRow>
+            );
+          })}
+      </TableBody>
+    </Table>
   );
 };
 

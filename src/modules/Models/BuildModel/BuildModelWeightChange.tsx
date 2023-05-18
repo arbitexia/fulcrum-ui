@@ -36,7 +36,6 @@ const BuildModelWeightChange = ({
   const onSlideChanged = (_: Event, value: number | number[]): void => {
     if (typeof value === 'number') {
       onChangeWeight(convertScore(value));
-      setWeight(convertScore(value));
     }
   };
   return (

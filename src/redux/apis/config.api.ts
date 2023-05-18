@@ -14,6 +14,10 @@ import {
 } from '@/types';
 import axios from 'axios';
 import config from '@/config';
+import {
+  GetRiskIndicatorConfigParams,
+  RiskIndicatorConfig,
+} from '@/types/config.type';
 
 const baseConfigUrl: string = config.URLS.CONFIG || '';
 
@@ -41,6 +45,19 @@ export const loadEntitiesDisplayConfig = async (
 ): Promise<EntitiesDescriptorConfig> => {
   const response = await axios.post<EntitiesDescriptorConfig>(
     `${baseConfigUrl}/api/config/entities-config`,
+    params,
+    {
+      headers,
+    }
+  );
+  return response.data;
+};
+
+export const loadRiskIndicatorsConfig = async (
+  params: GetRiskIndicatorConfigParams
+): Promise<RiskIndicatorConfig> => {
+  const response = await axios.post<RiskIndicatorConfig>(
+    `${baseConfigUrl}/api/config/risk-indicators-config`,
     params,
     {
       headers,

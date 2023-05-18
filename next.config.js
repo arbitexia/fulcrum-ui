@@ -8,6 +8,10 @@ const { parsed: appEnv } = require('dotenv').config({
 const nextConfig = withImages({
   webpack(config) {
     config.plugins.push(new webpack.EnvironmentPlugin(appEnv));
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
     return config;
   },
   reactStrictMode: false,

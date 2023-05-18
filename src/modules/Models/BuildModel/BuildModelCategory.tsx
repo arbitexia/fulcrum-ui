@@ -62,6 +62,7 @@ const BuildModelCategory = ({
   const stateResourceData = useAppSelector(getDataSourcesSelect);
   const stateFieldData = useAppSelector(getDataSourcesFields);
   const [openCollapse, setOpenCollapse] = useState<boolean>(true);
+  const [viewIcons, setViewIcons] = useState<boolean>(false);
 
   if (!stateResourceData || !stateFieldData || !isDataSourceConfigInitialized) {
     return <LinearProgress />;
@@ -84,6 +85,12 @@ const BuildModelCategory = ({
         modelValueChangeHandler({ operation, id: targetId, categoryListIndex })
       );
     }
+  };
+
+  const toggleViewIcons = (): void => {
+    setViewIcons((prevState) => {
+      return !prevState;
+    });
   };
 
   const handleInputChange = (
@@ -158,7 +165,8 @@ const BuildModelCategory = ({
         </IconButton>
         Category
         <UIDefaultTextField
-          value={modelCategory?.name}
+          placeholder="Add name"
+          defaultValue={modelCategory?.name}
           sx={{
             width: '288px',
             height: '36px',
@@ -167,12 +175,9 @@ const BuildModelCategory = ({
             paddingLeft: '8px',
             input: {
               '&::placeholder': {
-                fontStyle: 'italic',
                 fontWeight: '400',
                 fontSize: '13px',
                 lineHeight: '20px',
-                color: '#3F3F3F',
-                opacity: 1,
               },
             },
           }}
@@ -200,36 +205,48 @@ const BuildModelCategory = ({
         >
           {modelCategory?.weight ? roundScore(modelCategory?.weight) : 0}%
         </Typography>
-        <MoreHoriz />
-        <IconButton
-          onClick={(event) =>
-            handleActionClick(event, {
-              operation: 'appendModelCategory',
-              targetId: modelId,
-            })
-          }
-          sx={{ padding: 0 }}
-        >
-          <AddCircleOutline />
-        </IconButton>
-        <IconButton
-          onClick={(event) =>
-            handleActionClick(event, {
-              operation: 'removeModelCategoryAtIndex',
-              targetId: modelId,
-              categoryListIndex: index,
-            })
-          }
-          sx={{ padding: 0 }}
-        >
-          <Image
-            src="images/icons/delete.svg"
-            loader={appImageLoader}
-            width={20}
-            height={20}
-            alt="delete"
-          />
-        </IconButton>
+        <MoreHoriz
+          onClick={toggleViewIcons}
+          sx={{
+            cursor: 'pointer',
+            paddingTop: '5px',
+            width: '1.25em',
+            height: '1.25em',
+          }}
+        />
+        {viewIcons && (
+          <IconButton
+            onClick={(event) =>
+              handleActionClick(event, {
+                operation: 'appendModelCategory',
+                targetId: modelId,
+              })
+            }
+            sx={{ padding: 0 }}
+          >
+            <AddCircleOutline />
+          </IconButton>
+        )}
+        {viewIcons && (
+          <IconButton
+            onClick={(event) =>
+              handleActionClick(event, {
+                operation: 'removeModelCategoryAtIndex',
+                targetId: modelId,
+                categoryListIndex: index,
+              })
+            }
+            sx={{ padding: 0 }}
+          >
+            <Image
+              src="images/icons/delete.svg"
+              loader={appImageLoader}
+              width={20}
+              height={20}
+              alt="delete"
+            />
+          </IconButton>
+        )}
       </UIFlexWrapBox>
       <Collapse in={openCollapse} timeout="auto" unmountOnExit>
         {categoryRiskIndicators &&

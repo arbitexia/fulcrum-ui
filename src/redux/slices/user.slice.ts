@@ -49,20 +49,6 @@ const userSlice = createSlice({
       );
       state.user = user ? user : null;
     },
-    setStateAccessToken: (state, param) => {
-      const { payload } = param;
-      const { accessToken } = payload;
-      return {
-        ...state,
-        accessToken,
-      };
-    },
-    clearStateAccessToken: (state) => {
-      return {
-        ...state,
-        accessToken: undefined,
-      };
-    },
   },
   extraReducers: (builder) => {
     builder
@@ -87,10 +73,5 @@ const userSlice = createSlice({
 
 export const userSelector = (state: RootState): ReduxJson.UserState =>
   state.users;
-
-export const getAccessToken = (state: RootState): string =>
-  state.users.accessToken;
-
-export const { setStateAccessToken, clearStateAccessToken } = userSlice.actions;
 
 export default userSlice.reducer;

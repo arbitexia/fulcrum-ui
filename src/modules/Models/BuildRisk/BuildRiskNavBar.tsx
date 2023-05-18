@@ -14,7 +14,7 @@ import {
   UISelect,
   UIDefaultButton,
 } from '@/components/UI';
-import { behaviorData, riskTypeData } from '@/_mock';
+import { behaviorData } from '@/_mock';
 import { Box, InputLabel, Typography } from '@mui/material';
 import { RiskIndicatorType } from '@/types';
 import {
@@ -22,7 +22,8 @@ import {
   riskIndicatorTypeToTypeData,
 } from '@/_mock/models.mock';
 import {
-  getAccessToken,
+  getDataSourcesFields,
+  getDataSourcesSelect,
   riskValueChangeHandler,
   saveAttribute,
 } from '@/redux/slices';
@@ -34,14 +35,28 @@ import { NewAttributeParams } from '@/types/models.type';
 
 const BuildRiskNavbar = ({
   item,
+  accessToken = null,
 }: {
   item: RiskIndicatorType | null;
+  accessToken: string | null;
 }): JSX.Element => {
   const router = useRouter();
   const id = (item && item.id) || null;
-  const stateAccessToken = useAppSelector(getAccessToken);
 
   const dispatch = useAppDispatch();
+  const stateResourceData = useAppSelector(getDataSourcesSelect);
+  const stateFieldData = useAppSelector(getDataSourcesFields);
+  const defaultDataSourceId =
+    stateResourceData && stateResourceData.length > 0
+      ? stateResourceData[0].id
+      : undefined;
+
+  const defaultRiskFieldId =
+    defaultDataSourceId &&
+    stateFieldData &&
+    stateFieldData[defaultDataSourceId].length > 0
+      ? stateFieldData[defaultDataSourceId][0].id
+      : undefined;
 
   const handleSelectChange = (
     event: SelectChangeEvent<unknown>,
@@ -49,10 +64,16 @@ const BuildRiskNavbar = ({
       operation,
       targetId,
       listIndex,
+      dataSourceId,
+      riskFieldId,
+      secondRiskFieldId,
     }: {
       operation: string;
       targetId: string | null;
       listIndex?: number | undefined;
+      dataSourceId?: string | undefined;
+      riskFieldId?: string | undefined;
+      secondRiskFieldId?: string | undefined;
     }
   ): void => {
     const behaviorValue = (event.target.value as number) || null;
@@ -62,7 +83,15 @@ const BuildRiskNavbar = ({
 
     if (operation && targetId && value) {
       dispatch(
-        riskValueChangeHandler({ operation, id: targetId, value, listIndex })
+        riskValueChangeHandler({
+          operation,
+          id: targetId,
+          value,
+          listIndex,
+          dataSourceId,
+          riskFieldId,
+          secondRiskFieldId,
+        })
       );
     }
   };
@@ -103,9 +132,9 @@ const BuildRiskNavbar = ({
     const name = (item && item.name) ?? '';
     const riskItem = itemId && itemId === 'NEW' ? { ...item, id: null } : item;
     const attributeJson = JSON.stringify(riskItem);
-    if (stateAccessToken) {
+    if (accessToken) {
       dispatchSave({
-        accessToken: stateAccessToken,
+        accessToken,
         attributeJson,
         author: 'Diego Martinez',
         name,
@@ -114,21 +143,23 @@ const BuildRiskNavbar = ({
     }
   };
 
-  const { riskTypeId = null, behaviorTypeId = null } = (item &&
+  const { behaviorTypeId = null } = (item &&
     item.attributeType &&
     riskIndicatorTypeToTypeData[item?.attributeType]) || {
-    riskTypeId: null,
     behaviorTypeId: null,
   };
 
   return (
-    <UIContainer>
+    <UIContainer
+      disableGutters
+      sx={{ paddingTop: '27px', paddingLeft: '36px' }}
+    >
       <Typography variant="h4" sx={{ mr: 4 }}>
         Build a Risk Indicator
       </Typography>
       <UIFlexWrapBox sx={{ alignItems: 'flex-end', mt: 2, gap: 4 }}>
         <Box>
-          <InputLabel variant="standard">
+          <InputLabel variant="standard" htmlFor="risk-indicator-input-helper">
             <Typography
               sx={{
                 mb: 1,
@@ -143,7 +174,8 @@ const BuildRiskNavbar = ({
           </InputLabel>
           <UIDefaultTextField
             defaultValue={item?.name || ''}
-            sx={{ width: '288px' }}
+            sx={{ width: '432px' }}
+            id="risk-indicator-input-helper"
             variant="standard"
             onChange={(event) =>
               handleInputChange(event, {
@@ -154,7 +186,7 @@ const BuildRiskNavbar = ({
           />
         </Box>
         <Box>
-          <InputLabel variant="standard">
+          <InputLabel variant="standard" htmlFor="desc-input-helper">
             <Typography
               sx={{
                 mb: 1,
@@ -169,7 +201,8 @@ const BuildRiskNavbar = ({
           </InputLabel>
           <UIDefaultTextField
             defaultValue={item?.description || ''}
-            sx={{ width: '288px' }}
+            id="desc-input-helper"
+            sx={{ width: '576px' }}
             variant="standard"
             onChange={(event) =>
               handleInputChange(event, {
@@ -189,27 +222,6 @@ const BuildRiskNavbar = ({
               color: '#504F54',
             }}
           >
-            Type
-          </Typography>
-          <UISelect
-            defaultValue={riskTypeId || -1}
-            itemList={riskTypeData}
-            handleChange={noop}
-            width="236px"
-            height="36px"
-          />
-        </Box>
-
-        <Box>
-          <Typography
-            sx={{
-              mb: 1,
-              fontWeight: '400',
-              fontSize: '13px',
-              lineHeight: '20px',
-              color: '#504F54',
-            }}
-          >
             Behavior
           </Typography>
           <UISelect
@@ -219,6 +231,9 @@ const BuildRiskNavbar = ({
               handleSelectChange(event, {
                 targetId: id,
                 operation: 'changeRiskType',
+                dataSourceId: defaultDataSourceId,
+                riskFieldId: defaultRiskFieldId,
+                secondRiskFieldId: defaultRiskFieldId,
               })
             }
             width="236px"

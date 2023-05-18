@@ -6,20 +6,21 @@
 /**
  * Author: Dan Finkel
  */
-import React, { ChangeEvent } from 'react';
+import React, { ChangeEvent, useState } from 'react';
 import { Typography, Box, IconButton } from '@mui/material';
 import { AddCircleOutline } from '@mui/icons-material';
 import { UIFlexWrapBox, UISelect, UIDefaultTextField } from '@/components/UI';
-import { overTimeData, useData, dateData, reduceData } from '@/_mock';
 import { RiskIndicatorRangeValues, RiskIndicatorType } from '@/types';
 import Image from 'next/image';
 import { appImageLoader } from '@/libs/image-loader';
-import { UISelectInterface } from '@/types/common.type';
+import { EditValueItemProps, UISelectInterface } from '@/types/common.type';
 import { roundScore } from '@/libs/math-utils';
 import { useAppDispatch } from '@/hooks';
 import { SelectChangeEvent } from '@mui/material/Select/SelectInput';
 import { riskValueChangeHandler, riskValueClickHandler } from '@/redux/slices';
-import RecordExcludeItem from '@/modules/Models/BuildRisk/RecordExcludeItem';
+import BuildRiskSettings from '@/modules/Models/BuildRisk/BuildRiskSettings';
+import BuildInformationIcon from '@/modules/Models/BuildRisk/BuildInformationIcon';
+import UIAutocomplete from '@/components/UI/UIAutocomplete';
 
 const BuildRiskIndicatorSummationListObject = (
   id: string | null,
@@ -66,114 +67,131 @@ const BuildRiskIndicatorSummationListObject = (
 ): JSX.Element => {
   return (
     <UIFlexWrapBox key={index} sx={{ gap: 1, alignItems: 'center' }}>
+      {index === 0 && (
+        <BuildInformationIcon
+          title="Historical Data"
+          onOpenHistory={onOpenHistory}
+          readOnly={readOnly}
+        />
+      )}
       <UIFlexWrapBox
         sx={{
-          width: '90px',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
+          paddingLeft: index === 0 ? 0 : '9px',
         }}
       >
-        {index === 0 && (
-          <IconButton
-            sx={{ padding: 0 }}
-            onClick={onOpenHistory}
-            disabled={readOnly}
-          >
-            <Image
-              src="images/icons/info.svg"
-              loader={appImageLoader}
-              width={16}
-              height={16}
-              alt="info"
-            />
-          </IconButton>
-        )}
-        <Typography
+        <UIFlexWrapBox
           sx={{
-            fontSize: '13px',
-            color: '#504F54',
-            textAlign: 'right',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
           }}
         >
-          {index === 0 ? 'adds up to between' : 'or adds up to between'}
-        </Typography>
-      </UIFlexWrapBox>
-      <UIDefaultTextField
-        sx={{ width: '96px' }}
-        variant="standard"
-        defaultValue={matchItem.rangeStart}
-        onChange={(event) =>
-          handleInputChange(event, {
-            operation: 'changeRiskIndicatorRangeStartAtIndex',
-            targetId: id,
-            listIndex: index,
-          })
-        }
-        disabled={readOnly}
-      />
-      <Typography sx={{ fontSize: '13px', color: '#504F54' }}>and</Typography>
-      <UIDefaultTextField
-        sx={{ width: '96px' }}
-        variant="standard"
-        defaultValue={matchItem.rangeEnd}
-        onChange={(event) =>
-          handleInputChange(event, {
-            operation: 'changeRiskIndicatorRangeEndAtIndex',
-            targetId: id,
-            listIndex: index,
-          })
-        }
-        disabled={readOnly}
-      />
-      <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-        then score
-      </Typography>
-      <UIDefaultTextField
-        sx={{ width: '48px' }}
-        variant="standard"
-        defaultValue={roundScore(matchItem.weight)}
-        onChange={(event) =>
-          handleInputChange(event, {
-            operation: 'changeRiskIndicatorRangeWeightAtIndex',
-            targetId: id,
-            listIndex: index,
-          })
-        }
-        disabled={readOnly}
-      />
-      {!readOnly && (
-        <IconButton
-          onClick={(event) =>
-            handleActionClick(event, {
-              operation: 'appendNewRiskRangeList',
-              targetId: id,
-            })
-          }
-          sx={{ padding: 0 }}
-        >
-          <AddCircleOutline />
-        </IconButton>
-      )}
-      {!readOnly && (
-        <IconButton
-          onClick={(event) =>
-            handleActionClick(event, {
-              operation: 'removeRiskValueFromRangeListAtIndex',
+          <Typography
+            sx={{
+              fontSize: '13px',
+              color: '#504F54',
+              textAlign: 'right',
+              paddingTop: '8px',
+            }}
+          >
+            {index === 0 ? 'adds up to between' : 'or adds up to between'}
+          </Typography>
+        </UIFlexWrapBox>
+        <UIDefaultTextField
+          sx={{ width: '6em', textAlign: 'right' }}
+          inputProps={{ sx: { textAlign: 'right' } }}
+          variant="standard"
+          defaultValue={matchItem.rangeStart}
+          onChange={(event) =>
+            handleInputChange(event, {
+              operation: 'changeRiskIndicatorRangeStartAtIndex',
               targetId: id,
               listIndex: index,
             })
           }
-          sx={{ padding: 0 }}
+          disabled={readOnly}
+        />
+        <Typography
+          sx={{ fontSize: '13px', color: '#504F54', paddingTop: '8px' }}
         >
-          <Image
-            src="images/icons/delete.svg"
-            loader={appImageLoader}
-            width={20}
-            height={20}
-            alt="delete"
-          />
-        </IconButton>
-      )}
+          and
+        </Typography>
+        <UIDefaultTextField
+          sx={{ width: '6em', textAlign: 'right' }}
+          inputProps={{ sx: { textAlign: 'right' } }}
+          variant="standard"
+          defaultValue={matchItem.rangeEnd}
+          onChange={(event) =>
+            handleInputChange(event, {
+              operation: 'changeRiskIndicatorRangeEndAtIndex',
+              targetId: id,
+              listIndex: index,
+            })
+          }
+          disabled={readOnly}
+        />
+        <Typography
+          sx={{ fontSize: '13px', color: '#504F54', paddingTop: '8px' }}
+        >
+          then score
+        </Typography>
+        <UIDefaultTextField
+          sx={{ width: '3em', textAlign: 'right' }}
+          inputProps={{ sx: { textAlign: 'right' } }}
+          variant="standard"
+          defaultValue={roundScore(matchItem.weight)}
+          onChange={(event) =>
+            handleInputChange(event, {
+              operation: 'changeRiskIndicatorRangeWeightAtIndex',
+              targetId: id,
+              listIndex: index,
+            })
+          }
+          disabled={readOnly}
+        />
+        {!readOnly && (
+          <IconButton
+            onClick={(event) =>
+              handleActionClick(event, {
+                operation: 'appendNewRiskRangeList',
+                targetId: id,
+              })
+            }
+            sx={{
+              paddlingLeft: 0,
+              paddingRight: 0,
+              paddingBottom: 0,
+              paddingTop: '6px',
+            }}
+          >
+            <AddCircleOutline />
+          </IconButton>
+        )}
+        {!readOnly && (
+          <IconButton
+            onClick={(event) =>
+              handleActionClick(event, {
+                operation: 'removeRiskValueFromRangeListAtIndex',
+                targetId: id,
+                listIndex: index,
+              })
+            }
+            sx={{
+              paddlingLeft: 0,
+              paddingRight: 0,
+              paddingBottom: 0,
+              paddingTop: '8px',
+            }}
+          >
+            <Image
+              src="images/icons/delete.svg"
+              loader={appImageLoader}
+              width={20}
+              height={20}
+              alt="delete"
+            />
+          </IconButton>
+        )}
+      </UIFlexWrapBox>
     </UIFlexWrapBox>
   );
 };
@@ -182,20 +200,25 @@ const BuildRiskSummationList = ({
   indicator,
   dataSources,
   riskFields,
+  lists,
   onOpenHistory,
+  openEditModalValueProps,
+  datasourceChange,
   readOnly = false,
 }: {
   indicator: RiskIndicatorType | null;
   dataSources: UISelectInterface[];
   riskFields: { [dataSource: string]: UISelectInterface[] };
+  lists: { id: string; label: string }[];
   onOpenHistory: () => void;
+  openEditModalValueProps: (args: EditValueItemProps) => void;
+  datasourceChange: (dataSourceId: string) => void;
   readOnly?: boolean;
 }): JSX.Element => {
   const dispatch = useAppDispatch();
 
   const id = (indicator && indicator?.id) || null;
-  const valuesToMatch =
-    (indicator && indicator?.values && indicator?.values?.join(', ')) || '';
+  const valuesToMatch = (indicator && indicator?.values) || [];
   const handleSelectChange = (
     event: SelectChangeEvent<unknown>,
     {
@@ -213,7 +236,22 @@ const BuildRiskSummationList = ({
     }
     const value = event.target.value || null;
 
-    if (operation && targetId && value) {
+    if (operation === 'changeDataSource' && targetId && value) {
+      const newRiskFieldList = riskFields[value as string];
+      const newRiskFieldValue = newRiskFieldList[0].id;
+      datasourceChange(value as string);
+
+      dispatch(
+        riskValueChangeHandler({
+          operation,
+          id: targetId,
+          value,
+          listIndex,
+          riskFieldId: newRiskFieldValue,
+          secondRiskFieldId: newRiskFieldValue,
+        })
+      );
+    } else if (operation && targetId && value) {
       dispatch(
         riskValueChangeHandler({ operation, id: targetId, value, listIndex })
       );
@@ -242,6 +280,25 @@ const BuildRiskSummationList = ({
       );
     }
   };
+
+  const handleSyntheticChange = ({
+    operation,
+    targetId,
+    value,
+  }: {
+    operation: string;
+    targetId: string | null;
+    value: string | string[];
+  }): void => {
+    if (readOnly) {
+      return;
+    }
+
+    if (operation && targetId && value) {
+      dispatch(riskValueChangeHandler({ operation, id: targetId, value }));
+    }
+  };
+
   const handleActionClick = (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     {
@@ -273,9 +330,22 @@ const BuildRiskSummationList = ({
   const fieldObject = riskFields[dataSourceValue].find(
     (riskField) => riskField.id === fieldName
   );
-  const defaultValuesToMatch: string = valuesToMatch ?? '';
+  const defaultValuesToMatch: string[] = valuesToMatch ?? [];
   const fieldValue = fieldObject ? fieldObject.id : '';
   const defaultMatchFieldValue = fieldValue;
+  const textValuesStart: string = defaultValuesToMatch.join(',');
+  const [textValue, setTextValue] = useState<string>(textValuesStart);
+  const [_valuesLists, setValuesLists] =
+    useState<string[]>(defaultValuesToMatch);
+
+  const handleAutocompleteChange = (newVal: string[]): void => {
+    handleSyntheticChange({
+      operation: 'changeRiskFieldSummationValues',
+      targetId: id,
+      value: newVal as string[],
+    });
+  };
+
   return (
     <Box sx={{ mt: 2.5 }}>
       <UIFlexWrapBox>
@@ -333,7 +403,7 @@ const BuildRiskSummationList = ({
             (!indicator.rangeList || indicator.rangeList.length <= 0) &&
             BuildRiskIndicatorSummationListObject(
               id,
-              { rangeStart: 0, rangeEnd: 0, weight: 0.0 },
+              { rangeStart: '0', rangeEnd: '0', weight: 0.0 },
               0,
               onOpenHistory,
               handleSelectChange,
@@ -343,9 +413,11 @@ const BuildRiskSummationList = ({
             )}
         </Box>
       </UIFlexWrapBox>
-      <UIFlexWrapBox>
-        <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-          When
+      <UIFlexWrapBox sx={{ marginLeft: '539px', marginTop: '20px' }}>
+        <Typography
+          sx={{ fontSize: '13px', color: '#504F54', paddingTop: '8px' }}
+        >
+          when
         </Typography>
         <UISelect
           height="36px"
@@ -360,155 +432,35 @@ const BuildRiskSummationList = ({
           width="164px"
           disabled={readOnly}
         />
-        <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-          Matches
+        <Typography
+          sx={{ fontSize: '13px', color: '#504F54', paddingTop: '8px' }}
+        >
+          matches
         </Typography>
-        <UIDefaultTextField
-          sx={{ height: '36px' }}
-          variant="standard"
-          value={defaultValuesToMatch}
-          onChange={(event) =>
-            handleInputChange(event, {
-              targetId: id,
-              operation: 'changeRiskFieldSummationValues',
-            })
-          }
-          disabled={readOnly}
+        <UIAutocomplete
+          matchItemValues={defaultValuesToMatch ?? []}
+          textValue={textValue}
+          lists={lists}
+          setValuesLists={setValuesLists}
+          handleChange={handleAutocompleteChange}
+          setTextValue={setTextValue}
+          separators={[',']}
+          listPrefix="@"
+          onDoubleClick={() => {
+            openEditModalValueProps({
+              values: defaultValuesToMatch ?? [],
+              handleChange: handleAutocompleteChange,
+            });
+          }}
+          readOnly={readOnly}
         />
       </UIFlexWrapBox>
-      <UIFlexWrapBox sx={{ mt: 4, gap: 2, alignItems: 'center' }}>
-        <Typography sx={{ fontSize: '13px', color: '#504F54' }}>Use</Typography>
-        <UISelect
-          height="36px"
-          itemList={useData}
-          handleChange={(event) =>
-            handleSelectChange(event, {
-              operation: 'changeUseData',
-              targetId: id,
-            })
-          }
-          defaultValue={indicator?.useData || -1}
-          width="164px"
-          disabled={readOnly}
-        />
-        <UISelect
-          height="36px"
-          itemList={overTimeData}
-          handleChange={(event) =>
-            handleSelectChange(event, {
-              operation: 'changeUseOverTime',
-              targetId: id,
-            })
-          }
-          defaultValue={indicator?.useOverTime || -1}
-          width="124px"
-          disabled={readOnly}
-        />
-        <UIDefaultTextField
-          sx={{ width: '48px' }}
-          variant="standard"
-          defaultValue={indicator?.useDateValue || ''}
-          onChange={(event) =>
-            handleInputChange(event, {
-              operation: 'changeUseDateValue',
-              targetId: id,
-            })
-          }
-          disabled={readOnly}
-        />
-        <UISelect
-          height="36px"
-          itemList={dateData}
-          handleChange={(event) =>
-            handleSelectChange(event, {
-              operation: 'changeUseDateType',
-              targetId: id,
-            })
-          }
-          defaultValue={indicator?.useDateType || -1}
-          width="68px"
-          disabled={readOnly}
-        />
-      </UIFlexWrapBox>
-      <UIFlexWrapBox sx={{ mt: 6, gap: 2, alignItems: 'center' }}>
-        <UISelect
-          height="36px"
-          itemList={reduceData}
-          handleChange={(event) =>
-            handleSelectChange(event, {
-              operation: 'changeReduceType',
-              targetId: id,
-            })
-          }
-          defaultValue={indicator?.reduceType || -1}
-          width="107px"
-          disabled={readOnly}
-        />
-        <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-          risk score as event ages over
-        </Typography>
-        <UIDefaultTextField
-          sx={{ width: '48px' }}
-          variant="standard"
-          defaultValue={indicator?.reduceDateValue || ''}
-          onChange={(event) =>
-            handleInputChange(event, {
-              operation: 'changeReduceDateValue',
-              targetId: id,
-            })
-          }
-          disabled={readOnly}
-        />
-        <UISelect
-          height="36px"
-          itemList={dateData}
-          handleChange={(event) =>
-            handleSelectChange(event, {
-              operation: 'changeReduceDateType',
-              targetId: id,
-            })
-          }
-          defaultValue={indicator?.reduceDateType || -1}
-          width="68px"
-          disabled={readOnly}
-        />
-      </UIFlexWrapBox>
-      <UIFlexWrapBox sx={{ mt: 7, gap: 2, alignItems: 'center' }}>
-        <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-          Do not use records when Field Name
-        </Typography>
-        {indicator &&
-          indicator.featureFilter &&
-          indicator.featureFilter.length > 0 &&
-          indicator.featureFilter?.map((recordItem, index) => {
-            return (
-              <RecordExcludeItem
-                key={index}
-                id={id}
-                recordItem={recordItem}
-                index={index}
-                handleSelectChange={handleSelectChange}
-                handleInputChange={handleInputChange}
-                handleActionClick={handleActionClick}
-                readOnly={readOnly}
-                dataSourceId={dataSourceValue ?? ''}
-              />
-            );
-          })}
-        {indicator &&
-          (!indicator.featureFilter || indicator.featureFilter.length <= 0) && (
-            <RecordExcludeItem
-              id={id}
-              recordItem={{ field: '', feature: '', type: '', values: [] }}
-              index={0}
-              handleSelectChange={handleSelectChange}
-              handleInputChange={handleInputChange}
-              handleActionClick={handleActionClick}
-              readOnly={readOnly}
-              dataSourceId={dataSourceValue ?? ''}
-            />
-          )}
-      </UIFlexWrapBox>
+      <BuildRiskSettings
+        indicator={indicator}
+        dataSources={dataSources}
+        readOnly={readOnly}
+        lists={lists}
+      />
     </Box>
   );
 };

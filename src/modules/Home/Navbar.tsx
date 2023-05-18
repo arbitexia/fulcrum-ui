@@ -17,26 +17,27 @@ import {
 } from '@/components/UI';
 import { rankList, populationList } from '@/_mock';
 import {
-  getAccessToken,
-  getModelListSelector,
   getSelectedModelId,
   getLatestStat,
   setSelectedModelId,
 } from '@/redux/slices';
 import { useAppDispatch, useAppSelector } from '@/hooks';
-import { } from '@/redux/slices/model.slice';
+import { getActiveModelistSelector } from '@/redux/slices/model.slice';
 
-export const HomeNavbar = (): JSX.Element => {
+export const HomeNavbar = ({
+  accessToken = null,
+}: {
+  accessToken: string | null;
+}): JSX.Element => {
   const dispatch = useAppDispatch();
   const modelId = useAppSelector(getSelectedModelId);
-  const modelsListSelected = useAppSelector(getModelListSelector);
-  const stateAccessToken = useAppSelector(getAccessToken);
+  const modelsListSelected = useAppSelector(getActiveModelistSelector);
 
   const handleChange = (
     event: SelectChangeEvent<unknown>,
     operation: string
   ): void => {
-    if (operation === 'changeModel' && stateAccessToken) {
+    if (operation === 'changeModel' && accessToken) {
       const targetModelId = event.target.value as string;
       dispatch(setSelectedModelId({ modelId: targetModelId }));
       dispatch(
@@ -44,7 +45,8 @@ export const HomeNavbar = (): JSX.Element => {
         // @ts-ignore
         getLatestStat({
           modelId: targetModelId,
-          accessToken: stateAccessToken,
+          accessToken,
+          limit: 6,
         })
       );
     } else {
@@ -66,6 +68,7 @@ export const HomeNavbar = (): JSX.Element => {
                 itemList={modelsListSelected.items}
                 handleChange={(event) => handleChange(event, 'changeModel')}
                 label={modelsListSelected.label}
+                width="400px"
               />
             )}
           <UISelect
@@ -73,6 +76,7 @@ export const HomeNavbar = (): JSX.Element => {
             itemList={rankList.items}
             handleChange={(event) => handleChange(event, 'changeRank')}
             label={rankList.label}
+            disabled
           />
           <UISelect
             value={1}

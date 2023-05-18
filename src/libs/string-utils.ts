@@ -47,3 +47,22 @@ export const formatListId = (sourceListName: string): string => {
 
 export const formatTableCellName = (str: string): string =>
   str.charAt(0).toUpperCase() + str.slice(1);
+
+export const removeLast = (input: string, value: string): string => {
+  const lastIndex = input.lastIndexOf(value);
+  if (lastIndex > -1) {
+    return input.substring(0, lastIndex);
+  }
+  return input;
+};
+
+export const formatNumber = (
+  input: number,
+  locale = 'en-US',
+  significantDigits = 0
+): string => {
+  return new Intl.NumberFormat(
+    locale,
+    significantDigits > 0 ? { maximumSignificantDigits: significantDigits } : {}
+  ).format(input);
+};

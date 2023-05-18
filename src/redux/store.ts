@@ -38,6 +38,9 @@ import {
   listsReducer,
   graphReducer,
   externalReducer,
+  filtersReducer,
+  riskReducer,
+  governanceReducer,
 } from './slices';
 import { WebStorage } from 'redux-persist/es/types';
 
@@ -54,6 +57,9 @@ const combinedReducer = combineReducers<{
   lists: ReduxJson.ListsState;
   graph: ReduxJson.GraphState;
   external: ReduxJson.ExternalState;
+  filters: ReduxJson.FiltersState;
+  risks: ReduxJson.RiskState;
+  governance: ReduxJson.GovernanceState;
 }>({
   app: appReducer,
   users: userReducer,
@@ -67,6 +73,9 @@ const combinedReducer = combineReducers<{
   lists: listsReducer,
   graph: graphReducer,
   external: externalReducer,
+  filters: filtersReducer,
+  risks: riskReducer,
+  governance: governanceReducer,
 });
 
 const createStore = (): Store => {

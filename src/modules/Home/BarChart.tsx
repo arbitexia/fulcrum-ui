@@ -14,6 +14,7 @@ import {
   InputLabel,
   Checkbox,
   SelectChangeEvent,
+  LinearProgress,
 } from '@mui/material';
 import { Bar } from 'react-chartjs-2';
 import {
@@ -25,8 +26,6 @@ import {
   Tooltip,
   Legend,
   ChartData,
-  ScatterDataPoint,
-  BubbleDataPoint,
 } from 'chart.js';
 import {
   UIScoreChip,
@@ -38,14 +37,17 @@ import {
 } from '@/components/UI';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import {
-  categoriesSelector,
   barChartDataSelector,
   scoringPageInfoSelector,
   changePageNumber,
 } from '@/redux/slices';
 import { barChartOptions } from '@/_mock';
 import { PaginateParam } from '@/types';
-import { getScoringCount } from '@/redux/slices/scoring.slice';
+import {
+  getScoringCount,
+  setSelectedCategoriesState,
+} from '@/redux/slices/scoring.slice';
+import { getColorPair } from '@/libs/color-generator';
 
 ChartJS.register(
   CategoryScale,
@@ -58,22 +60,33 @@ ChartJS.register(
 
 export const StyledLegendBox = styled(Box)({
   fontSize: '14px',
-  lineHeight: '20px',
   color: '#485A63',
 });
 
-export const HomeBarChart = (): JSX.Element => {
-  const categories = useAppSelector(categoriesSelector);
+export const HomeBarChart = ({
+  originalCategories,
+  originalCategoriesInitialized,
+  refreshCategories,
+  setRefreshCategories,
+}: {
+  originalCategories: string[];
+  originalCategoriesInitialized: boolean;
+  refreshCategories: boolean;
+  setRefreshCategories: (val: boolean) => void;
+}): JSX.Element => {
+  const dispatch = useAppDispatch();
   const barChartData = useAppSelector(barChartDataSelector);
   const selectPageInfo: PaginateParam = useAppSelector(
     scoringPageInfoSelector('homePage')
   );
   const scoringCount = useAppSelector(getScoringCount);
-  const dispatch = useAppDispatch();
-  const [category, setCategory] = useState<string[]>([]);
-  const [chartData, setChartData] = useState<
-    ChartData<'bar', (number | ScatterDataPoint | BubbleDataPoint | null)[]>
-  >({ labels: [], datasets: [] });
+  const [selectedCategories, setSelectedCategories] = useState<string[] | null>(
+    null
+  );
+  const [chartData, setChartData] = useState<ChartData<'bar', number[]>>({
+    labels: [],
+    datasets: [],
+  });
   const [limit, setLimit] = useState<number>(selectPageInfo.limit ?? 25);
   const [pageNumber, setPageNumber] = useState<number>(
     selectPageInfo?.pageNumber ?? 1
@@ -95,8 +108,22 @@ export const HomeBarChart = (): JSX.Element => {
   };
 
   useEffect(() => {
-    setCategory(categories);
-  }, [categories]);
+    if (
+      (selectedCategories === null || refreshCategories) &&
+      originalCategoriesInitialized &&
+      originalCategories.length >= 0
+    ) {
+      setSelectedCategories(originalCategories);
+      setRefreshCategories(false);
+    }
+  }, [
+    selectedCategories,
+    originalCategories,
+    setSelectedCategories,
+    originalCategoriesInitialized,
+    refreshCategories,
+    setRefreshCategories,
+  ]);
 
   useEffect(() => {
     setChartData(barChartData);
@@ -104,24 +131,21 @@ export const HomeBarChart = (): JSX.Element => {
 
   const handleChange = (event: SelectChangeEvent<unknown>): void => {
     const value = event.target.value as string[];
-    if (value) {
-      setCategory(value);
-      const valuesSet = new Set(value);
-      setChartData((prev: typeof barChartData) => {
-        return {
-          ...prev,
-          datasets: barChartData.datasets.filter((w) => {
-            const label = w.label ? w.label : '';
-            return valuesSet.has(label);
-          }),
-        };
-      });
+    setSelectedCategories(value);
+    if (value.length < originalCategories.length) {
+      dispatch(setSelectedCategoriesState({ categories: value }));
+    } else {
+      dispatch(setSelectedCategoriesState({ categories: undefined }));
     }
   };
 
   const useLimit = selectPageInfo?.limit ?? 25;
   const usePageNumber = selectPageInfo?.pageNumber ?? 25;
   const maxPageNumber = Math.ceil(scoringCount / useLimit);
+
+  if (selectedCategories === null) {
+    return <LinearProgress />;
+  }
 
   return (
     <Box>
@@ -143,7 +167,7 @@ export const HomeBarChart = (): JSX.Element => {
             id="demo-simple-select-helper"
             defaultValue={1}
             label="Edit Categories"
-            value={category}
+            value={selectedCategories}
             multiple
             onChange={handleChange}
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -152,10 +176,10 @@ export const HomeBarChart = (): JSX.Element => {
             textColor="#0050BE"
             sx={{ maxWidth: '250px' }}
           >
-            {categories.map((item, index) => {
+            {originalCategories.map((item, index) => {
               return (
                 <UISelectItem key={index} value={item} textColor="#0050BE">
-                  <Checkbox checked={category.indexOf(item) > -1} />
+                  <Checkbox checked={selectedCategories.indexOf(item) > -1} />
                   {item}
                 </UISelectItem>
               );
@@ -163,28 +187,33 @@ export const HomeBarChart = (): JSX.Element => {
           </UISelectBox>
         </Box>
       </UIFlexSpaceBox>
+      <UIFlexWrapBox sx={{ gap: 3 }}>
+        {originalCategories.map((item, index) => {
+          if (selectedCategories.indexOf(item) === -1) {
+            return null;
+          }
+          const backgroundColor = getColorPair(index).bgColor;
+          return (
+            <StyledLegendBox key={index}>
+              <UIScoreChip
+                label=""
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                bgColor={
+                  barChartData?.datasets[index]?.backgroundColor ??
+                  backgroundColor
+                }
+                sx={{ marginRight: '8px', width: '12px', height: '12px' }}
+              />
+              {item}
+            </StyledLegendBox>
+          );
+        })}
+      </UIFlexWrapBox>
       <Box sx={{ margin: (theme) => theme.spacing(2, 'auto') }}>
         <Bar options={barChartOptions} data={chartData} />
       </Box>
-      <UIFlexSpaceBox>
-        <UIFlexWrapBox sx={{ gap: 3 }}>
-          {categories.map((item, index) => {
-            return category.indexOf(item) > -1 ? (
-              <StyledLegendBox key={index}>
-                <UIScoreChip
-                  label=""
-                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                  // @ts-ignore
-                  bgColor={barChartData.datasets[index].backgroundColor}
-                  sx={{ marginRight: '8px', width: '24px', height: '24px' }}
-                />
-                {item}
-              </StyledLegendBox>
-            ) : (
-              ''
-            );
-          })}
-        </UIFlexWrapBox>
+      <UIFlexSpaceBox sx={{ justifyContent: 'right' }}>
         <UIPagination
           pageNumber={usePageNumber}
           pageCount={useLimit > 0 ? maxPageNumber : 0}

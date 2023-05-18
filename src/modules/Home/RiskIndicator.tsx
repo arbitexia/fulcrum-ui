@@ -7,28 +7,36 @@
  * Author: Diego Martinez
  */
 import React from 'react';
-import { Typography, ListItem, styled } from '@mui/material';
-import { UIWhiteCard, UIList } from '@/components/UI';
+import { Typography, styled } from '@mui/material';
+import { UIWhiteCard } from '@/components/UI';
+import { useAppSelector } from '@/hooks';
+import { getTopRiskIndicatorsByModelId } from '@/redux/slices/stat.slice';
+import { getNumberTopRiskIndicators } from '@/redux/slices/config.slice';
+import { roundScore } from '@/libs/math-utils';
 
-export const StyledListItem = styled(ListItem)({
+export const StyledListItem = styled('li')({
   padding: '2.5px 20px',
 });
 
-const HomeRiskIndicator = (): JSX.Element => {
+const HomeRiskIndicator = ({ modelId }: { modelId: string }): JSX.Element => {
+  const numberTopRiskIndicators = useAppSelector(getNumberTopRiskIndicators);
+  const topRiskIndicatorsByModelId = useAppSelector(
+    getTopRiskIndicatorsByModelId(modelId)
+  );
   return (
     <UIWhiteCard sx={{ height: '50%' }}>
       <Typography variant="h6" color="text.secondary">
-        Top 5 Risk Indicators per percent of the population
+        Top {numberTopRiskIndicators} Risk Indicators per percent of the
+        population
       </Typography>
-      <UIList sx={{ fontSize: '13px', lineHeight: '16px' }}>
-        <StyledListItem>1. Flight Risk - 4%</StyledListItem>
-        <StyledListItem>2. Financial Stressors - 2% </StyledListItem>
-        <StyledListItem>3. Badge Access out of Normal time - 2%</StyledListItem>
-        <StyledListItem>
-          4. E-mails sent to Personal Account - 2%
-        </StyledListItem>
-        <StyledListItem>5. Access to Critical Facilities - 1%</StyledListItem>
-      </UIList>
+      <ol style={{ fontSize: '15px', lineHeight: '18px' }}>
+        {topRiskIndicatorsByModelId &&
+          topRiskIndicatorsByModelId.map(({ attribute, percentage }, index) => (
+            <StyledListItem key={index}>
+              {attribute} - {roundScore(percentage, 100, 2)}%
+            </StyledListItem>
+          ))}
+      </ol>
     </UIWhiteCard>
   );
 };

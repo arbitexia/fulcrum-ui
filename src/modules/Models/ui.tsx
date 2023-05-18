@@ -6,11 +6,12 @@
 /**
  * Author: Diego Martinez
  */
+
 import { styled, TableCell } from '@mui/material';
 
 export const StyledNoBorderCell = styled(TableCell)({
   fontSize: '14px',
-  fontWeight: 400,
+  fontWeight: 700,
   lineHeight: '20px',
   borderBottom: 'none',
 });

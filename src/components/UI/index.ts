@@ -7,11 +7,13 @@
  * Author: Diego Martinez
  */
 export {
+  UICheckbox,
   UIFlexSpaceBox,
   UIFlexCenterBox,
   UIFlexColumnBox,
   UIFlexWrapBox,
   UILayoutMain,
+  UIScorebox,
 } from './Box';
 export { UIAppLayoutWrapper, UITabWrapper } from './Wrapper';
 export { UIWhiteCard } from './Card';
@@ -26,4 +28,7 @@ export { UIVerticalArrow } from './VerticalArrow';
 export { UIDefaultDialog, UISideDialog } from './Modal';
 export { UIModalButton, UIDefaultButton } from './Button';
 export { UIDefaultSwitch } from './Switch';
+export { UIBorderCell, UINoBorderCell } from './TableCell';
 export { UITabPanel } from './TabPanel';
+export { UIIOSSwitch } from './UIIOSwitch';
+export { UIDefaultDatePicker } from './DatePicker';

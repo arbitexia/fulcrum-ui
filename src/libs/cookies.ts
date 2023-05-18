@@ -4,7 +4,7 @@
  */
 
 /**
- * Author: Ritesh Patel
+ * Author: Ritesh patel
  */
 export const write_cookie = (
   name: string,

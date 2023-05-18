@@ -59,6 +59,11 @@ export type {
   RetrieveListsParams,
   NewListParams,
   DeleteListParams,
+  FilterAttributeType,
+  Filter,
+  NewFilterParams,
+  RetrieveFilterParams,
+  RetrieveFiltersParams,
 } from './models.type';
 
 export type {
@@ -90,9 +95,19 @@ export type {
   PeerDataType,
   GraphDataType,
   GraphModalProps,
+  GetPeerAttributeHistoricalRankingParams,
+  GetPeerAttributeRankingParams,
 } from './graph.type';
 
 // FIXME - Define the Jsons based on the response from the backend.
 export type { ReduxJson } from './redux.type';
 export type { UserJson } from './user.type';
+
+export type {
+  UnmaskingTableType,
+  GovernanceColumnType,
+  UsageTableType,
+  StatusTableType,
+} from './governance.type';
+
 export type { AccessTokenType } from './auth.type';

@@ -20,6 +20,8 @@ export type StateCardItemType = {
   amount: string;
   info: string;
   icon?: string;
+  index: number;
+  formatter: (input: number) => string;
 };
 
 export interface StateCardProps {

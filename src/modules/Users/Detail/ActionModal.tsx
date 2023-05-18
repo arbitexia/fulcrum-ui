@@ -253,7 +253,7 @@ export const ActionModal = ({
               <UIDefaultTextField
                 variant="standard"
                 sx={{ width: '198px' }}
-                value={description}
+                defaultValue={description}
                 onChange={handleDescriptionChange}
               />
             </Box>
@@ -276,7 +276,7 @@ export const ActionModal = ({
               </Typography>
               <UIDefaultTextField
                 variant="standard"
-                value={actionTime}
+                defaultValue={actionTime}
                 sx={{ width: '115px' }}
                 onChange={handleActionTimeChange}
               />
@@ -335,7 +335,7 @@ export const ActionModal = ({
               stableSort<ExternalApplication>(
                 externalData,
                 getComparator(order, orderBy)
-              ).map((row, index) => (
+              ).map(([row, _], index) => (
                 <TableRow key={index}>
                   <TableCell
                     sx={{

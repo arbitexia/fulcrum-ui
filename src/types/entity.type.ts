@@ -6,9 +6,38 @@
 /**
  * Author: Dan Finkel
  */
+import { HistoricalRanking, ScoringResult } from '@/types/scoring.type';
 
 export type PropertyType = {
-  [propertyid: string]: string;
+  [propertyid: string]: string | null | number | boolean;
+};
+
+export type Frame = number[];
+
+export type ScoringDetailsOutlierConfig = {
+  threshold: number;
+  minimumEventCountThreshold: number;
+  occurrenceBased: boolean;
+  fillInUnits: number;
+  unitMilliseconds: number;
+  unitsInFrame: number;
+  unitsInSubframe: number;
+  unitWeightingOffset: number;
+  unitWeightingLength: number;
+  frameWeightedUnits: number[];
+  unitWeighting: number;
+  frameWeighting: number;
+  scoringType: string;
+};
+
+export type ScoringDetailsJson = {
+  frames: Frame[];
+  outlierPeriods: number[];
+  maxOutlierPeriod: number;
+  startingEpoch: number;
+  populationMean: number;
+  populationStdDev: number;
+  outlierConfig: ScoringDetailsOutlierConfig;
 };
 
 export type Entity = {
@@ -16,6 +45,9 @@ export type Entity = {
   properties: PropertyType;
   entityComments?: EntityComment[];
   entityStatus: EntityStatus;
+  scoringResult: ScoringResult;
+  entityHistoricalRanking?: { [dateString: string]: HistoricalRanking };
+  unmaskToken: string;
 };
 
 export type EntityStatus = string;
@@ -31,14 +63,15 @@ export type EntityReturnStatus = {
 };
 
 export type EntityComment = {
-  id: string;
   comment: string;
   author: string;
+  timestamp: number;
 };
 
 export type GetEntityParams = {
   accessToken: string;
   entityId: string;
+  unmaskToken: string;
 };
 
 export type GetEntitiesParams = {

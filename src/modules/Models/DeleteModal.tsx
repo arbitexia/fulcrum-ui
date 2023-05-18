@@ -27,6 +27,7 @@ interface DeleteModalProps extends DefaultModalProps {
   id: string | number;
   typeUrl: string;
   onConfirm: () => void;
+  title: string;
 }
 const typeUrlToName: {
   [typeUrl: string]: (id: string) => (state: RootState) => string | undefined;
@@ -42,6 +43,7 @@ export const DeleteConfirmModal = ({
   id,
   typeUrl,
   onConfirm,
+  title,
 }: DeleteModalProps): JSX.Element => {
   const name = useAppSelector(
     typeUrl in typeUrlToName ? typeUrlToName[typeUrl](id as string) : noop
@@ -57,7 +59,7 @@ export const DeleteConfirmModal = ({
     <UIDefaultDialog
       open={open}
       onClose={onClose}
-      title="Edit List"
+      title={title}
       modalWidth="668px"
     >
       <UIFlexWrapBox sx={{ gap: 3, flexDirection: 'row' }}>

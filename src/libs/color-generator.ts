@@ -54,8 +54,15 @@ export const trendColorList: TrendColor[] = [
 ];
 
 export const getColorPair = (index: number): TrendColor => {
-  const trendColorIndex = index % trendColorList.length;
-  return trendColorList[trendColorIndex];
+  if (index >= trendColorList.length) {
+    const textColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+    const bgColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+    trendColorList.push({
+      textColor,
+      bgColor,
+    });
+  }
+  return trendColorList[index];
 };
 
 const tableScoreColorScale: { [truncatedScore: number]: string } = {
@@ -134,3 +141,5 @@ export const getStatusColor = (
   }
   return statusColors[defaultKey];
 };
+
+export const outlierColor = 'rgb(0,0,0)';

@@ -81,6 +81,19 @@ export const saveModel = createAsyncThunk<
   }
 });
 
+export const modifyModel = createAsyncThunk<
+  Model,
+  NewModelParams,
+  { dispatch: AppDispatch; state: RootState }
+>('model/modifyModel', async (params: NewModelParams, thunkAPI) => {
+  try {
+    return await modelApi.modifyModel(params);
+  } catch (error) {
+    const err = error as AxiosError;
+    return thunkAPI.rejectWithValue(err.response?.data);
+  }
+});
+
 export const deleteModel = createAsyncThunk<
   string,
   DeleteModelParams,
@@ -625,7 +638,10 @@ const modelsSlice = createSlice({
           });
           payload.sort(keyComparator<Model>(payload, 'name'));
           if (payload.length > 0) {
-            firstModelId = payload[0].id;
+            const activeModels = payload.filter((model: Model) => model.active);
+            if (activeModels.length > 0) {
+              firstModelId = activeModels[0].id;
+            }
           }
           state.models = modelsByModelId;
           state.selectedModelId = firstModelId;
@@ -692,6 +708,32 @@ const modelsSlice = createSlice({
         state.initialized = true;
         state.status = ResponseStatus.FAILED;
       })
+      .addCase(modifyModel.pending, (state) => {
+        state.loading = true;
+        state.initialized = false;
+        state.status = ResponseStatus.PENDING;
+      })
+      .addCase(
+        modifyModel.fulfilled,
+        (state, { payload }: PayloadAction<Model>) => {
+          state.loading = false;
+          state.initialized = true;
+          const model: Model = payload;
+          const id = model.id;
+          if (id && model) {
+            state.models = {
+              ...state.models,
+              [id]: { ...model },
+            };
+          }
+          state.status = ResponseStatus.SUCCESS;
+        }
+      )
+      .addCase(modifyModel.rejected, (state) => {
+        state.loading = false;
+        state.initialized = true;
+        state.status = ResponseStatus.FAILED;
+      })
       .addCase(deleteModel.pending, (state) => {
         state.loading = true;
         state.initialized = false;
@@ -742,12 +784,42 @@ export const modelIdsToNamesSelector = (
   return [];
 };
 
+export const activeModelIdsToNamesSelector = (
+  state: RootState
+): UISelectInterface[] => {
+  if (state?.models?.models) {
+    const models: Model[] = Object.values(state.models.models);
+    const activeModels: Model[] = models.filter(
+      (model: Model) => model.active === true
+    );
+    const modelUIList: UISelectInterface[] = activeModels.map(
+      (model: Model) => {
+        const modelId = model.id ?? '';
+        const name = model.name ?? '';
+        return { id: modelId, name };
+      }
+    );
+    modelUIList.sort(keyComparator<UISelectInterface>(modelUIList, 'name'));
+    return modelUIList;
+  }
+  return [];
+};
+
 export const getModelListSelector = (
   state: RootState
 ): { label: string; items: UISelectInterface[] } => {
   return {
     label: 'Model Name',
     items: modelIdsToNamesSelector(state),
+  };
+};
+
+export const getActiveModelistSelector = (
+  state: RootState
+): { label: string; items: UISelectInterface[] } => {
+  return {
+    label: 'Model Name',
+    items: activeModelIdsToNamesSelector(state),
   };
 };
 

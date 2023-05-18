@@ -21,6 +21,15 @@ export type EntitiesDescriptorConfig = {
     default: string;
     values: EntityProperty[];
   };
+  entityMaskingValues: {
+    default: string;
+    values: EntityProperty[];
+  };
+  homePageTopPercent: number;
+};
+
+export type RiskIndicatorConfig = {
+  topNumberRiskIndicators: number;
 };
 
 export type GetDataSourceConfigParams = {
@@ -28,6 +37,10 @@ export type GetDataSourceConfigParams = {
 };
 
 export type GetEntitiesConfigParams = {
+  accessToken: string;
+};
+
+export type GetRiskIndicatorConfigParams = {
   accessToken: string;
 };
 

@@ -13,15 +13,10 @@ import { useRouter } from 'next/router';
 import { appImageLoader } from '@/libs/image-loader';
 import { UIFlexCenterBox, UIFlexColumnBox } from '@/components/UI';
 import { sidebarMenus } from '@/constants';
-import { useAppDispatch } from '@/hooks';
-import { clearStateAccessToken } from '@/redux/slices';
-import config from '@/config';
-
-const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
 const AppSidebar = (): JSX.Element => {
   const router = useRouter();
-  const dispatch = useAppDispatch();
+
   return (
     <Drawer
       variant="permanent"
@@ -47,32 +42,28 @@ const AppSidebar = (): JSX.Element => {
         />
       </UIFlexCenterBox>
       <UIFlexColumnBox sx={{ gap: '35px', paddingTop: '45px' }}>
-        {sidebarMenus.map((el, index) => (
-          <Tooltip
-            title={el.title}
-            key={index}
-            placement="right"
-            style={{ cursor: 'pointer' }}
-          >
-            <Box>
-              <Image
-                src={el.imgPath}
-                width={22}
-                height={22}
-                loader={appImageLoader}
-                alt={el.title}
-                onClick={() => {
-                  if (el.route === '/logout') {
-                    dispatch(clearStateAccessToken());
-                    router.push(
-                      `${baseAuthenticationUrl}/login/${config.AUTHENTICATION_SERVICE}`
-                    );
-                  } else router.push(el.route);
-                }}
-              />
-            </Box>
-          </Tooltip>
-        ))}
+        {sidebarMenus.map(
+          (el, index) =>
+            el.display !== false && (
+              <Tooltip
+                title={el.title}
+                key={index}
+                placement="right"
+                style={{ cursor: 'pointer' }}
+              >
+                <Box>
+                  <Image
+                    src={el.imgPath}
+                    width={22}
+                    height={22}
+                    loader={appImageLoader}
+                    alt={el.title}
+                    onClick={() => router.push(el.route)}
+                  />
+                </Box>
+              </Tooltip>
+            )
+        )}
       </UIFlexColumnBox>
     </Drawer>
   );

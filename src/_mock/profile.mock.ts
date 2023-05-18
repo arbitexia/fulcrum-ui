@@ -75,7 +75,7 @@ export const basisTableData = [
   createBasisData(6, '5/15/2022', 50, 13, '3.1KB'),
 ];
 
-type ProfileTimeLineRiskType = {
+export type ProfileTimeLineRiskType = {
   id: number;
   trend: number;
   label: string;
@@ -83,86 +83,27 @@ type ProfileTimeLineRiskType = {
   colorIndex: number;
 };
 
-type ProfileTimeLineType = {
+export type ProfileTimeLineType = {
   id: number;
   score: number;
   date: string;
   items: ProfileTimeLineRiskType[];
 };
 
-const createTimeLineData = (
-  id: number,
-  score: number,
-  date: string,
-  items: ProfileTimeLineRiskType[]
-): ProfileTimeLineType => {
-  return { id, score, date, items };
+export type HistoricalDataRiskIndicatorScore = {
+  name: string;
+  score: number;
 };
 
-export const timeLineData = [
-  createTimeLineData(1, 22, 'Apr 6, 2022', [
-    {
-      id: 1,
-      trend: 2.1,
-      label: 'Access to Critical Assets',
-      up: 0,
-      colorIndex: 2,
-    },
-    {
-      id: 2,
-      trend: 2,
-      label: 'USB Usage Alerts - from DLP',
-      up: 0,
-      colorIndex: 1,
-    },
-  ]),
-  createTimeLineData(2, 28, 'Apr 28, 2022', [
-    { id: 1, trend: 2, label: 'Foreign Nexus', up: 1, colorIndex: 3 },
-    { id: 2, trend: 1, label: 'High Risk Emails Sent', up: 1, colorIndex: 7 },
-    {
-      id: 3,
-      trend: 2,
-      label: 'USB Usage Alerts - from DLP',
-      up: 0,
-      colorIndex: 1,
-    },
-    {
-      id: 4,
-      trend: 2,
-      label: 'USB Usage Alerts - from DLP',
-      up: 0,
-      colorIndex: 1,
-    },
-  ]),
-  createTimeLineData(3, 36, 'May 8, 2022', [
-    {
-      id: 1,
-      trend: 2,
-      label: 'Emails Outside Normal Behavior',
-      up: 0,
-      colorIndex: 1,
-    },
-    { id: 2, trend: 4.2, label: 'Flight Risk', up: 0, colorIndex: 0 },
-  ]),
-  createTimeLineData(4, 42, 'May 9, 2022', [
-    {
-      id: 1,
-      trend: 2,
-      label: 'Emails Outside Normal Behavior',
-      up: 0,
-      colorIndex: 1,
-    },
-    { id: 2, trend: 2, label: 'High Risk Email Sent', up: 0, colorIndex: 1 },
-    {
-      id: 3,
-      trend: 2,
-      label: 'USB Usage Alerts - from DLP',
-      up: 0,
-      colorIndex: 1,
-    },
-    { id: 4, trend: 8.2, label: 'Flight Risk', up: 0, colorIndex: 0 },
-  ]),
-];
+export type HistoricalDataCategoryScore = {
+  name: string;
+  score: number;
+  riskIndicators: HistoricalDataRiskIndicatorScore[];
+};
+
+export type HistoricalDataForEntityId = {
+  [date: string]: HistoricalDataCategoryScore[];
+};
 
 const createCommentData = (
   id: number,

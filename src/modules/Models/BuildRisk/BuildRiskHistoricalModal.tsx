@@ -6,27 +6,34 @@
 /**
  * Author: Diego Martinez
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   styled,
   Box,
-  Dialog,
   DialogContent,
   DialogTitle,
   Typography,
   IconButton,
+  Drawer,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import {
   UIFlexWrapBox,
   UISelect,
-  UIDefaultTextField,
-  UIProfilePagination,
+  // UIDefaultTextField,
+  // UIProfilePagination,
   UIFlexColumnBox,
 } from '@/components/UI';
 import { DefaultModalProps } from '@/types';
-import { populationList } from '@/_mock';
 import BuildRiskHistoricalTable from './BuildRiskHistoricalTable';
+import { useAppSelector } from '@/hooks';
+import {
+  getFiltersByDataSourceId,
+  getStatsByDataSourceIdFeatureAndFieldName,
+} from '@/redux/slices';
+import { roundToSignificant } from '@/libs/math-utils';
+import { SelectChangeEvent } from '@mui/material/Select/SelectInput';
+import { UniqueValueCountDisplay } from '@/types/stats.type';
 
 export const StyledText = styled(Typography)({
   padding: '4px',
@@ -35,15 +42,46 @@ export const StyledText = styled(Typography)({
   lineHeight: '16px',
 });
 
+interface HistoricalModalProps extends DefaultModalProps {
+  dataSourceId: string;
+  riskFieldId: string;
+}
+
 const BuildRiskHistoricalModal = ({
   open,
   onClose,
-}: DefaultModalProps): JSX.Element => {
-  const handleChange = (): void => {
-    console.log('handleChange');
+  dataSourceId,
+  riskFieldId,
+}: HistoricalModalProps): JSX.Element => {
+  const filters = useAppSelector(getFiltersByDataSourceId(dataSourceId));
+  const defaultFilter =
+    filters && filters.length > 0 ? filters[0] : { id: '', name: '' };
+  const [stateFilterValue, setStateFilterValue] = useState<string>(
+    defaultFilter.id
+  );
+  const startingModelData = useAppSelector(
+    getStatsByDataSourceIdFeatureAndFieldName(
+      dataSourceId,
+      stateFilterValue,
+      riskFieldId
+    )
+  );
+  const handleChange = (event: SelectChangeEvent<unknown>): void => {
+    const value = (event.target.value as string) || null;
+    if (value) {
+      setStateFilterValue(value as string);
+    }
   };
+
+  const uniqueValueArrays: UniqueValueCountDisplay[] = Object.entries(
+    startingModelData.uniqueValueCounts ?? {}
+  ).map(([value, occurrence]) => {
+    return { value, occurrence };
+  });
+
   return (
-    <Dialog
+    <Drawer
+      anchor="right"
       open={open}
       onClose={onClose}
       sx={{
@@ -54,7 +92,6 @@ const BuildRiskHistoricalModal = ({
           maxWidth: '440px',
         },
       }}
-      fullWidth
     >
       <DialogTitle
         sx={{
@@ -95,7 +132,7 @@ const BuildRiskHistoricalModal = ({
               Data Source:
             </Typography>
             <Typography sx={{ color: '#0050BE', fontSize: 13 }}>
-              Human Resources
+              {dataSourceId}
             </Typography>
           </UIFlexWrapBox>
           <UIFlexWrapBox>
@@ -103,7 +140,7 @@ const BuildRiskHistoricalModal = ({
               Field Name:
             </Typography>
             <Typography sx={{ color: '#0050BE', fontSize: 13 }}>
-              Performance Rating
+              {riskFieldId}
             </Typography>
           </UIFlexWrapBox>
           <UIFlexWrapBox sx={{ alignItems: 'center' }}>
@@ -111,26 +148,30 @@ const BuildRiskHistoricalModal = ({
               Population:
             </Typography>
             <UISelect
-              itemList={populationList.items}
+              itemList={filters}
               handleChange={handleChange}
+              value={stateFilterValue}
             />
           </UIFlexWrapBox>
         </UIFlexWrapBox>
-        <UIFlexWrapBox
-          sx={{
-            background: '#ECEFF1',
-            p: '8px 24px 16px 24px',
-            alignItems: 'center',
-          }}
-        >
-          <Typography fontSize={13}>Date Range between:</Typography>{' '}
-          <UIDefaultTextField sx={{ width: '100px' }} variant="standard" />
-          <Typography fontSize={13}>and</Typography>
-          <UIDefaultTextField sx={{ width: '100px' }} variant="standard" />
-        </UIFlexWrapBox>
+        {/*<UIFlexWrapBox*/}
+        {/*  sx={{*/}
+        {/*    background: '#ECEFF1',*/}
+        {/*    p: '8px 24px 16px 24px',*/}
+        {/*    alignItems: 'center',*/}
+        {/*  }}*/}
+        {/*>*/}
+        {/*  <Typography fontSize={13}>Date Range between:</Typography>{' '}*/}
+        {/*  <UIDefaultTextField sx={{ width: '100px' }} variant="standard" />*/}
+        {/*  <Typography fontSize={13}>and</Typography>*/}
+        {/*  <UIDefaultTextField sx={{ width: '100px' }} variant="standard" />*/}
+        {/*</UIFlexWrapBox>*/}
         <Box sx={{ py: 2, px: 3 }}>
-          <UIProfilePagination flip={true} />
-          <BuildRiskHistoricalTable />
+          {/*<UIProfilePagination flip={true} />*/}
+          <BuildRiskHistoricalTable
+            uniqueValueCounts={uniqueValueArrays}
+            isNumeric={startingModelData.isNumeric}
+          />
         </Box>
         <UIFlexColumnBox sx={{ borderTop: '1px solid #000000', p: 3 }}>
           <Typography
@@ -155,19 +196,27 @@ const BuildRiskHistoricalModal = ({
               <StyledText>Maximum</StyledText>
             </Box>
             <Box>
-              <StyledText>30,137</StyledText>
-              <StyledText>5</StyledText>
-              <StyledText>4.2</StyledText>
-              <StyledText>3.9</StyledText>
-              <StyledText>2</StyledText>
-              <StyledText>1.2</StyledText>
-              <StyledText>1</StyledText>
-              <StyledText>5</StyledText>
+              <StyledText>{startingModelData?.count ?? 0}</StyledText>
+              <StyledText>{startingModelData?.uniquenessLimitExceeded != '' ? startingModelData?.uniquenessLimitExceeded : startingModelData?.countUnique ?? 0}</StyledText>
+              <StyledText>
+                {roundToSignificant(startingModelData?.mean ?? 0)}
+              </StyledText>
+              <StyledText>
+                {roundToSignificant(startingModelData?.median ?? 0)}
+              </StyledText>
+              <StyledText>
+                {roundToSignificant(startingModelData?.stdDev ?? 0)}
+              </StyledText>
+              <StyledText>
+                {roundToSignificant(startingModelData?.skewness ?? 0)}
+              </StyledText>
+              <StyledText>{startingModelData?.min ?? 0}</StyledText>
+              <StyledText>{startingModelData?.max ?? 0}</StyledText>
             </Box>
           </UIFlexWrapBox>
         </UIFlexColumnBox>
       </DialogContent>
-    </Dialog>
+    </Drawer>
   );
 };
 

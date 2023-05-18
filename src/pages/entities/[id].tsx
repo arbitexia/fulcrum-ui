@@ -15,7 +15,6 @@ import {
   getEntitiesConfigInitialized,
   getSelectedModelId,
   retrieveDataSources,
-  getAccessToken,
   isScoringInitializedSelector,
   getIsEntitiesInitialized,
   isModelsInitialized,
@@ -25,13 +24,15 @@ import {
   getSelectedStats,
   getStatsInitialized,
   getLatestStat,
-  getIsCommentsInitialized,
   getIsEntityStatusInitialized,
-  getEntityComments,
   getEntity,
   isScoringStatusFailed,
   isStatsStatusPending,
   isEntityStatusPending,
+  getIsHistoricalDataInitialized,
+  retrieveHistoricalDataForModelAndEntity,
+  isScoringStatusPending,
+  isStatsStatusSuccess,
 } from '@/redux/slices';
 import {
   UserDetailNavbar,
@@ -48,29 +49,67 @@ import {
   scoredCategoriesTreeListSelector,
 } from '@/redux/slices/entity.slice';
 import { retrieveEntitiesConfig } from '@/redux/slices/config.slice';
-import { Box } from '@mui/material';
+import { Box, LinearProgress } from '@mui/material';
 import {
+  getIsPeerGroupHashInitialized,
+  getIsPeerGroupHistoricalHashesInitialized,
+  getPeerGroupHashCallFailedForModelId,
+  getPeerGroupHashModelId,
   getScoringCurrentModelId,
+  retrieveGroupHash,
+  retrieveHistoricalGroupHashes,
   retrieveScoresForEntity,
 } from '@/redux/slices/scoring.slice';
+import { useCookies } from 'react-cookie';
+import config from '@/config';
+import { noop } from 'lodash';
+import { AccessTokenType } from '@/types';
+
+const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
 const Profile = (): ReactElement => {
   const router = useRouter();
   const basisRef = useRef(null);
   const dispatch = useAppDispatch();
-  const { query, isReady } = router;
-  const { id: entityId = '', modelId: queryModelId = null } = query as {
+  const { query, isReady } = router as {
+    query: {
+      id?: string | null;
+      modelId?: string | null;
+      unmaskToken?: string | null;
+    };
+    isReady: boolean;
+  };
+  const {
+    id: entityId = '',
+    modelId: queryModelId = null,
+    unmaskToken: queryUnmaskToken,
+  } = query as {
     id: string;
     modelId: string;
+    unmaskToken: string;
   };
+  const decodedUnmaskToken = queryUnmaskToken ? decodeURIComponent(queryUnmaskToken) : '';
+  const [cookies] = useCookies(['accessToken']);
+  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
   const entity: Entity | null =
     useAppSelector(entityByIdSelector(entityId)) || null;
 
   const entitiesInitialized = useAppSelector(getIsEntitiesInitialized);
+  const isPeerGroupHashInitialized = useAppSelector(
+    getIsPeerGroupHashInitialized
+  );
+  const isPeerGroupHistoricalHashInitialized = useAppSelector(
+    getIsPeerGroupHistoricalHashesInitialized
+  );
   const isModelsInitializedValue = useAppSelector(isModelsInitialized);
   const modelId = useAppSelector(getSelectedModelId);
   const scoresModelId = useAppSelector(getScoringCurrentModelId);
+  const peerGroupHashModelId = useAppSelector(getPeerGroupHashModelId);
   const isStatsInitialized = useAppSelector(getStatsInitialized);
+  const isStatStatusSuccessValue = useAppSelector(isStatsStatusSuccess);
+  const peerGroupHashCallFailed = useAppSelector(
+    getPeerGroupHashCallFailedForModelId(modelId)
+  );
   const modelStats = useAppSelector(getSelectedStats);
   const entityProperties: PropertyType | null =
     useAppSelector(
@@ -82,26 +121,37 @@ const Profile = (): ReactElement => {
   const isEntitiesConfigInitialized = useAppSelector(
     getEntitiesConfigInitialized
   );
-  const isEntitiesCommentsInitialized = useAppSelector(
-    getIsCommentsInitialized
-  );
   const isEntitiesStatusInitialized = useAppSelector(
     getIsEntityStatusInitialized
+  );
+  const isHistoricalDataInitialized = useAppSelector(
+    getIsHistoricalDataInitialized
   );
   const isStatStatusPendingValue = useAppSelector(isStatsStatusPending);
   const isEntityStatusPendingValue = useAppSelector(isEntityStatusPending);
   const isScoringStatusFailedValue = useAppSelector(isScoringStatusFailed);
-  const stateAccessToken = useAppSelector(getAccessToken);
+  const isScoringStatusPendingValue = useAppSelector(isScoringStatusPending);
   const isScoringInitialized = useAppSelector(isScoringInitializedSelector);
   const categoriesSelected = useAppSelector(
     scoredCategoriesTreeListSelector(entityId)
   );
-  const isCommentsInitialized = useAppSelector(getIsCommentsInitialized);
   const [selectedAttributeId, setSelectedAttributeId] = useState('');
   const [isDataSourceChanged, setIsDataSourceChanged] = useState(false);
   const [currentQueryModelId, setCurrentQueryModelId] = useState<string | null>(
     queryModelId
   );
+
+  useEffect(() => {
+    if (isReady) {
+      if (!cookieAccessToken) {
+        router
+          .push(
+            `${baseAuthenticationUrl}/login/${config.AUTHENTICATION_SERVICE}`
+          )
+          .then(noop);
+      }
+    }
+  }, [isReady, cookieAccessToken, router, dispatch]);
 
   useEffect(() => {
     if (isReady && isModelsInitializedValue && currentQueryModelId) {
@@ -111,26 +161,26 @@ const Profile = (): ReactElement => {
   }, [dispatch, isModelsInitializedValue, currentQueryModelId, isReady]);
 
   useEffect(() => {
-    if (!isDataSourceConfigInitialized && stateAccessToken) {
+    if (!isDataSourceConfigInitialized && cookieAccessToken) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      dispatch(retrieveDataSources({ accessToken: stateAccessToken }));
+      dispatch(retrieveDataSources({ accessToken: cookieAccessToken }));
     }
-  }, [isDataSourceConfigInitialized, dispatch, stateAccessToken]);
+  }, [isDataSourceConfigInitialized, dispatch, cookieAccessToken]);
 
   useEffect(() => {
-    if (!isEntitiesConfigInitialized && stateAccessToken) {
+    if (!isEntitiesConfigInitialized && cookieAccessToken) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      dispatch(retrieveEntitiesConfig({ accessToken: stateAccessToken }));
+      dispatch(retrieveEntitiesConfig({ accessToken: cookieAccessToken }));
     }
-  }, [isEntitiesConfigInitialized, dispatch, stateAccessToken]);
+  }, [isEntitiesConfigInitialized, dispatch, cookieAccessToken]);
 
   useEffect(() => {
     if (
       isReady &&
       !entitiesInitialized &&
-      stateAccessToken &&
+      cookieAccessToken &&
       entityId &&
       !isEntityStatusPendingValue
     ) {
@@ -138,8 +188,9 @@ const Profile = (): ReactElement => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         getEntity({
-          accessToken: stateAccessToken,
+          accessToken: cookieAccessToken,
           entityId,
+          unmaskToken: decodedUnmaskToken ?? '',
         })
       );
     }
@@ -147,98 +198,103 @@ const Profile = (): ReactElement => {
     dispatch,
     isReady,
     entitiesInitialized,
-    stateAccessToken,
+    cookieAccessToken,
     entityId,
     isEntityStatusPendingValue,
+    decodedUnmaskToken,
   ]);
 
   useEffect(() => {
     if (
       isReady &&
       !isEntitiesStatusInitialized &&
-      stateAccessToken &&
+      cookieAccessToken &&
       entityId
     ) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      dispatch(getEntityStatus({ accessToken: stateAccessToken, entityId }));
+      dispatch(getEntityStatus({ accessToken: cookieAccessToken, entityId }));
     }
   }, [
     isEntitiesStatusInitialized,
     dispatch,
-    stateAccessToken,
+    cookieAccessToken,
     entityId,
     isReady,
   ]);
 
   useEffect(() => {
-    if (!isCommentsInitialized && stateAccessToken && entityId) {
+    if (!isModelsInitializedValue && cookieAccessToken) {
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        getEntityComments({
-          accessToken: stateAccessToken,
-          entityId,
-        })
-      );
-    }
-  }, [isCommentsInitialized, stateAccessToken, entityId, dispatch]);
-
-  useEffect(() => {
-    if (
-      isReady &&
-      !isEntitiesCommentsInitialized &&
-      stateAccessToken &&
-      entityId
-    ) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      dispatch(getEntityComments({ accessToken: stateAccessToken, entityId }));
-    }
-  }, [
-    isEntitiesCommentsInitialized,
-    dispatch,
-    stateAccessToken,
-    entityId,
-    isReady,
-  ]);
-
-  useEffect(() => {
-    if (!isModelsInitializedValue && stateAccessToken) {
-      dispatch(
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        retrieveModels({ accessToken: stateAccessToken, limit: 3000 })
+        retrieveModels({ accessToken: cookieAccessToken, limit: 3000 })
       );
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        retrieveAttributes({ accessToken: stateAccessToken, limit: 3000 })
+        retrieveAttributes({ accessToken: cookieAccessToken, limit: 3000 })
       );
     }
-  }, [isModelsInitializedValue, dispatch, stateAccessToken]);
+  }, [isModelsInitializedValue, dispatch, cookieAccessToken]);
 
   useEffect(() => {
     const statsModelId = modelStats?.modelId ?? null;
     if (
       (!isStatsInitialized || statsModelId !== modelId) &&
-      stateAccessToken &&
+      cookieAccessToken &&
       modelId &&
       !isStatStatusPendingValue
     ) {
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        getLatestStat({ modelId, accessToken: stateAccessToken })
+        getLatestStat({ modelId, accessToken: cookieAccessToken, limit: 6 })
       );
     }
   }, [
     isStatsInitialized,
     modelStats,
-    stateAccessToken,
+    cookieAccessToken,
     modelId,
     isStatStatusPendingValue,
     dispatch,
+  ]);
+
+  useEffect(() => {
+    const modelStatsId = modelStats?.modelId ?? null;
+    const modelInstance = modelStats?.instance ?? null;
+    if (
+      (!isPeerGroupHashInitialized || peerGroupHashModelId !== modelId) &&
+      cookieAccessToken &&
+      modelId &&
+      entityId &&
+      isStatStatusSuccessValue &&
+      modelStatsId === modelId &&
+      modelInstance &&
+      !peerGroupHashCallFailed
+    ) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        retrieveGroupHash({
+          accessToken: cookieAccessToken,
+          modelId,
+          modelInstance,
+          entityId,
+        })
+      );
+    }
+  }, [
+    dispatch,
+    modelId,
+    entityId,
+    peerGroupHashModelId,
+    modelStats,
+    cookieAccessToken,
+    isPeerGroupHashInitialized,
+    isStatStatusSuccessValue,
+    peerGroupHashCallFailed,
   ]);
 
   useEffect(() => {
@@ -249,15 +305,18 @@ const Profile = (): ReactElement => {
       modelId &&
       entityId &&
       !currentQueryModelId &&
+      isStatsInitialized &&
+      isStatStatusSuccessValue &&
       modelStats &&
-      stateAccessToken &&
+      modelStats.modelId === modelId &&
+      cookieAccessToken &&
       !isScoringStatusFailedValue
     ) {
       dispatch(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         retrieveScoresForEntity({
-          accessToken: stateAccessToken,
+          accessToken: cookieAccessToken,
           modelId,
           modelInstance: modelStats.instance,
           entityId,
@@ -270,11 +329,80 @@ const Profile = (): ReactElement => {
     entityId,
     scoresModelId,
     currentQueryModelId,
+    isStatsInitialized,
+    isStatStatusSuccessValue,
     modelStats,
-    stateAccessToken,
+    cookieAccessToken,
     isScoringInitialized,
     isModelsInitializedValue,
     isScoringStatusFailedValue,
+  ]);
+
+  useEffect(() => {
+    const modelChanged = scoresModelId !== modelId;
+    if (
+      (!isHistoricalDataInitialized || modelChanged) &&
+      isModelsInitializedValue &&
+      modelId &&
+      entityId &&
+      !currentQueryModelId &&
+      cookieAccessToken &&
+      !isScoringStatusFailedValue &&
+      isScoringInitialized
+    ) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        retrieveHistoricalDataForModelAndEntity({
+          accessToken: cookieAccessToken,
+          modelId,
+          entityId,
+        })
+      );
+    }
+  }, [
+    dispatch,
+    modelId,
+    entityId,
+    scoresModelId,
+    currentQueryModelId,
+    cookieAccessToken,
+    isHistoricalDataInitialized,
+    isModelsInitializedValue,
+    isScoringStatusFailedValue,
+    isScoringInitialized,
+  ]);
+
+  useEffect(() => {
+    if (
+      (!isPeerGroupHistoricalHashInitialized || scoresModelId !== modelId) &&
+      isModelsInitializedValue &&
+      cookieAccessToken &&
+      modelId &&
+      entityId &&
+      !isScoringStatusFailedValue &&
+      !isScoringStatusPendingValue
+    ) {
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        retrieveHistoricalGroupHashes({
+          accessToken: cookieAccessToken,
+          modelId,
+          entityId,
+        })
+      );
+    }
+  }, [
+    dispatch,
+    modelId,
+    entityId,
+    scoresModelId,
+    cookieAccessToken,
+    isPeerGroupHistoricalHashInitialized,
+    isModelsInitializedValue,
+    isScoringStatusFailedValue,
+    isScoringStatusPendingValue,
   ]);
 
   const onScrollToBasis = (attributeId: string): void => {
@@ -290,25 +418,37 @@ const Profile = (): ReactElement => {
     }
   };
 
+  if (!cookieAccessToken || !isReady) {
+    return <LinearProgress />;
+  }
+
   return (
     <DashboardLayout
       title="User Profile"
       navbarBorder={true}
-      navEls={<UserDetailNavbar entity={entity} />}
+      navEls={
+        <UserDetailNavbar entity={entity} accessToken={cookieAccessToken} />
+      }
     >
       <UserDetailView entityProperties={entityProperties} />
-      {categoriesSelected && (
+
+      {categoriesSelected && modelId && entityId && modelStats && (
         <UserDetailRiskView
           entityId={entityId}
+          modelId={modelId}
+          modelInstance={modelStats.instance}
           onScrollToBasis={onScrollToBasis}
+          accessToken={cookieAccessToken}
         />
       )}
-      <UserDetailTimeLineView />
+      {entityId && <UserDetailTimeLineView entityId={entityId} />}
       <Box ref={basisRef}>
         <UserDetailBasisView
           entityId={entityId}
           isDataSourceChanged={isDataSourceChanged}
           attributeId={selectedAttributeId}
+          accessToken={cookieAccessToken}
+          unmaskToken={decodedUnmaskToken}
         />
       </Box>
     </DashboardLayout>

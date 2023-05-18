@@ -22,6 +22,7 @@ import Image from 'next/image';
 import { appImageLoader } from '@/libs/image-loader';
 import { useAppSelector } from '@/hooks';
 import { getDataSourcesFields, getDataSourcesSelect } from '@/redux/slices';
+import BuildInformationIcon from '@/modules/Models/BuildRisk/BuildInformationIcon';
 
 const BuildRiskAcrossScore = ({
   item,
@@ -95,19 +96,11 @@ const BuildRiskAcrossScore = ({
                     }}
                   >
                     {index === 0 && (
-                      <IconButton
-                        sx={{ padding: 0 }}
-                        onClick={onOpenHistory}
-                        disabled={readOnly}
-                      >
-                        <Image
-                          src="images/icons/info.svg"
-                          loader={appImageLoader}
-                          width={16}
-                          height={16}
-                          alt="info"
-                        />
-                      </IconButton>
+                      <BuildInformationIcon
+                        title="Historical Data"
+                        onOpenHistory={onOpenHistory}
+                        readOnly={readOnly}
+                      />
                     )}
                     <Typography
                       sx={{
@@ -119,7 +112,6 @@ const BuildRiskAcrossScore = ({
                       {index === 0 ? 'matches' : 'or matches'}
                     </Typography>
                   </UIFlexWrapBox>
-
                   <UIDefaultTextField
                     sx={{ width: '48px' }}
                     variant="standard"

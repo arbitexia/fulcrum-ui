@@ -16,11 +16,17 @@ import {
   UIVerticalArrow,
 } from '@/components/UI';
 import { StyledHeader } from './ui';
-import { timeLineData } from '@/_mock';
 import { getColorPair, getScoreColor } from '@/libs/color-generator';
 import { roundScoreIntelligently } from '@/libs/math-utils';
+import { useAppSelector } from '@/hooks';
+import { timeLineViewForEntityId } from '@/redux/slices';
 
-const UserDetailTimeLineView = (): JSX.Element => {
+const UserDetailTimeLineView = ({
+  entityId,
+}: {
+  entityId: string;
+}): JSX.Element => {
+  const timeLineData = useAppSelector(timeLineViewForEntityId(entityId));
   return (
     <UIContainer sx={{ pb: 0 }}>
       <StyledHeader>Timeline</StyledHeader>
@@ -55,7 +61,7 @@ const UserDetailTimeLineView = (): JSX.Element => {
                 }}
               >
                 <UIScoreChip
-                  label={riskData.score}
+                  label={roundScoreIntelligently(riskData.score)}
                   bgColor={getScoreColor(
                     roundScoreIntelligently(riskData.score)
                   )}
@@ -67,6 +73,7 @@ const UserDetailTimeLineView = (): JSX.Element => {
                   <UIFlexWrapBox
                     key={trendData.id}
                     sx={{
+                      flexWrap: 'nowrap',
                       alignItems: 'center',
                       padding: '8px 14px',
                       background: '#FFFFFF',
@@ -97,7 +104,7 @@ const UserDetailTimeLineView = (): JSX.Element => {
                         background: getColorPair(trendData.colorIndex).bgColor,
                       }}
                     >
-                      {trendData.trend}
+                      {roundScoreIntelligently(trendData.trend)}
                     </UIFlexCenterBox>
                     <Typography
                       sx={{

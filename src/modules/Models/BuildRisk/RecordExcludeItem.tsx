@@ -6,24 +6,32 @@
 /**
  * Author: Diego Martinez
  */
+import React from 'react';
 import { Box, IconButton, LinearProgress } from '@mui/material';
-import { UIDefaultTextField, UIFlexWrapBox, UISelect } from '@/components/UI';
+import { UIFlexWrapBox, UISelect } from '@/components/UI';
 import { filterOptionData } from '@/_mock';
 import { AddCircleOutline } from '@mui/icons-material';
 import Image from 'next/image';
 import { appImageLoader } from '@/libs/image-loader';
-import React, { ChangeEvent } from 'react';
 import { SelectChangeEvent } from '@mui/material/Select/SelectInput';
 import { RiskIndicatorExcludeItems } from '@/types/models.type';
 import { useAppSelector } from '@/hooks';
 import { getDataSourcesFields } from '@/redux/slices';
+import UIAutocomplete from '@/components/UI/UIAutocomplete';
+import { noop } from 'lodash';
 
 const RecordExcludeItem = ({
   id,
   recordItem,
   index,
+  textValue,
+  setTextValue,
+  deleteTextValueAtIndex,
+  setValuesLists,
+  deleteValueAtIndex,
+  lists,
   handleSelectChange,
-  handleInputChange,
+  handleSyntheticChange,
   handleActionClick,
   readOnly,
   dataSourceId,
@@ -31,6 +39,12 @@ const RecordExcludeItem = ({
   id: string | null;
   recordItem: RiskIndicatorExcludeItems;
   index: number;
+  textValue: string;
+  setTextValue: (input: string) => void;
+  deleteTextValueAtIndex: (callback: () => void) => void;
+  setValuesLists: (input: string[]) => void;
+  deleteValueAtIndex: (callback: () => void) => void;
+  lists: { id: string; label: string }[];
   handleSelectChange: (
     event: SelectChangeEvent<unknown>,
     {
@@ -43,18 +57,17 @@ const RecordExcludeItem = ({
       listIndex?: number | undefined;
     }
   ) => void;
-  handleInputChange: (
-    event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>,
-    {
-      operation,
-      targetId,
-      listIndex,
-    }: {
-      operation: string;
-      targetId: string | null;
-      listIndex?: number | undefined;
-    }
-  ) => void;
+  handleSyntheticChange: ({
+    operation,
+    targetId,
+    listIndex,
+    value,
+  }: {
+    operation: string;
+    targetId: string | null;
+    listIndex?: number | undefined;
+    value: string | string[];
+  }) => void;
   handleActionClick: (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     {
@@ -78,7 +91,10 @@ const RecordExcludeItem = ({
 
   return (
     <Box>
-      <UIFlexWrapBox key={index} sx={{ alignItems: 'center' }}>
+      <UIFlexWrapBox
+        key={index}
+        sx={{ alignItems: 'center', paddingLeft: index === 0 ? 0 : '227px' }}
+      >
         <UISelect
           height="36px"
           itemList={stateFieldData[dataSourceId]}
@@ -89,8 +105,8 @@ const RecordExcludeItem = ({
               listIndex: index,
             })
           }
-          defaultValue={recordItem.field}
-          width="164px"
+          defaultValue={recordItem.field || ''}
+          width="20em"
           disabled={readOnly}
         />
         <UISelect
@@ -103,22 +119,28 @@ const RecordExcludeItem = ({
               listIndex: index,
             })
           }
-          defaultValue={recordItem.type}
+          defaultValue={recordItem.type || filterOptionData[1].id}
           width="229px"
           disabled={readOnly}
         />
-        <UIDefaultTextField
-          variant="standard"
-          defaultValue={recordItem.values}
-          onChange={(event) =>
-            handleInputChange(event, {
-              operation: 'changeValueDataAtIndex',
+        <UIAutocomplete
+          matchItemValues={recordItem.values ?? []}
+          textValue={textValue}
+          lists={lists}
+          setValuesLists={setValuesLists}
+          handleChange={(newVal: string[]) => {
+            handleSyntheticChange({
               targetId: id,
+              operation: 'changeValueDataAtIndex',
               listIndex: index,
-            })
-          }
-          sx={{ width: '207px' }}
-          disabled={readOnly}
+              value: newVal as string[],
+            });
+          }}
+          setTextValue={setTextValue}
+          separators={[',']}
+          listPrefix="@"
+          onDoubleClick={noop}
+          readOnly={readOnly}
         />
         {!readOnly && (
           <IconButton
@@ -135,13 +157,17 @@ const RecordExcludeItem = ({
         )}
         {!readOnly && (
           <IconButton
-            onClick={(event) =>
-              handleActionClick(event, {
-                operation: 'removeRiskValueExclusionAtIndex',
-                targetId: id,
-                listIndex: index,
-              })
-            }
+            onClick={(event) => {
+              deleteTextValueAtIndex(() => {
+                deleteValueAtIndex(() => {
+                  handleActionClick(event, {
+                    operation: 'removeRiskValueExclusionAtIndex',
+                    targetId: id,
+                    listIndex: index,
+                  });
+                });
+              });
+            }}
             sx={{ padding: 0 }}
           >
             <Image

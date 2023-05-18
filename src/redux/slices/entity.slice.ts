@@ -9,6 +9,8 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppDispatch } from '@/redux/store';
 import {
+  Attributes,
+  EntityPropertyBase,
   PaginateResult,
   ReduxJson,
   ResponseStatus,
@@ -26,8 +28,13 @@ import {
   EntityRanking,
   ScoringResult,
 } from '@/types';
-import { Scoring } from '@/types/scoring.type';
 import {
+  HistoricalRanking,
+  HistoricalRankingResult,
+  Scoring,
+} from '@/types/scoring.type';
+import {
+  retrieveHistoricalDataForModelAndEntity,
   retrieveScores,
   retrieveScoresForEntity,
 } from '@/redux/slices/scoring.slice';
@@ -42,6 +49,27 @@ import {
   QueryEntityStatusParams,
 } from '@/types/entity.type';
 import { roundScoreIntelligently } from '@/libs/math-utils';
+import {
+  formatDate,
+  HOUR_AS_MILLISECONDS_FROM_EPOCH,
+  WEEK_AS_MILLISECONDS_FROM_EPOCH,
+} from '@/libs/time-utils';
+import {
+  HistoricalDataCategoryScore,
+  HistoricalDataForEntityId,
+  HistoricalDataRiskIndicatorScore,
+  ProfileTimeLineRiskType,
+  ProfileTimeLineType,
+} from '@/_mock/profile.mock';
+import { BubbleDataPoint, ChartData, ScatterDataPoint } from 'chart.js';
+import { outlierColor } from '@/libs/color-generator';
+import { difference } from '@/libs/set-utils';
+import {
+  getMaskedEntityStatusSelector,
+  getSystemMaskingSelector,
+} from '@/redux/slices/governance.slice';
+import { existsInArray } from '@/libs/array-utils';
+import { entityMaskingIcons } from '@/redux/slices/config.slice';
 import { checkAuthToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.EntitiesState = {
@@ -52,7 +80,16 @@ const initialState: ReduxJson.EntitiesState = {
   isCommentsInitialized: false,
   isStatusInitialized: false,
   rankingByEntityId: {},
+  historyByEntityId: {},
 };
+
+export const ENTITY_STATUS_NEW = 'New';
+export const ENTITY_STATUS_IN_PROGRESS = 'In progress';
+export const ENTITY_STATUS_REVIEWED = 'Reviewed';
+export const ENTITY_STATUS_CASE_OPENED = 'Case Opened';
+export const ENTITY_STATUS_CASE_CLOSED = 'Case Closed';
+export const MASKED_RESPONSE = '[MASKED]';
+export const NOT_AVAILABLE = 'N/A';
 
 export const getEntities = createAsyncThunk<
   Entity[],
@@ -78,6 +115,21 @@ export const getEntity = createAsyncThunk<
     // TODO - define the api auth token
     await checkAuthToken();
     return await entityApi.loadEntityData(params);
+  } catch (error) {
+    const err = error as AxiosError;
+    return thunkAPI.rejectWithValue(err.response?.data);
+  }
+});
+
+export const getUnmaskedEntity = createAsyncThunk<
+  Entity,
+  GetEntityParams,
+  { dispatch: AppDispatch; state: RootState }
+>('entity/getUnmaskedEntity', async (params: GetEntityParams, thunkAPI) => {
+  try {
+    // TODO - define the api auth token
+    await checkAuthToken();
+    return await entityApi.loadUnmaskedEntityData(params);
   } catch (error) {
     const err = error as AxiosError;
     return thunkAPI.rejectWithValue(err.response?.data);
@@ -189,7 +241,7 @@ const entitiesSlice = createSlice({
             const newProperties: { [propertyId: string]: string } = {};
             Object.entries(properties).forEach(([key, value]) => {
               const lowerCasedKey = key.toLowerCase();
-              newProperties[lowerCasedKey] = value;
+              newProperties[lowerCasedKey] = value as string;
             });
             entitiesById[entityId] = { ...entity, properties: newProperties };
           });
@@ -217,15 +269,46 @@ const entitiesSlice = createSlice({
           const newProperties: { [propertyId: string]: string } = {};
           Object.entries(properties).forEach(([key, value]) => {
             const lowerCasedKey = key.toLowerCase();
-            newProperties[lowerCasedKey] = value;
+            newProperties[lowerCasedKey] = value as string;
           });
           const newEntity: Entity = { ...payload, properties: newProperties };
           state.entities = {
+            ...state.entities,
             [entityId]: newEntity,
           };
         }
       )
       .addCase(getEntity.rejected, (state) => {
+        state.loading = false;
+        state.initialized = true;
+        state.status = ResponseStatus.FAILED;
+        state.entities = {};
+      })
+      .addCase(getUnmaskedEntity.pending, (state) => {
+        state.loading = true;
+        state.initialized = false;
+        state.status = ResponseStatus.PENDING;
+      })
+      .addCase(
+        getUnmaskedEntity.fulfilled,
+        (state, { payload }: PayloadAction<Entity>) => {
+          state.loading = false;
+          state.initialized = true;
+          state.status = ResponseStatus.SUCCESS;
+          const { entityId, properties } = payload;
+          const newProperties: { [propertyId: string]: string } = {};
+          Object.entries(properties).forEach(([key, value]) => {
+            const lowerCasedKey = key.toLowerCase();
+            newProperties[lowerCasedKey] = value as string;
+          });
+          const newEntity: Entity = { ...payload, properties: newProperties };
+          state.entities = {
+            ...state.entities,
+            [entityId]: newEntity,
+          };
+        }
+      )
+      .addCase(getUnmaskedEntity.rejected, (state) => {
         state.loading = false;
         state.initialized = true;
         state.status = ResponseStatus.FAILED;
@@ -240,19 +323,19 @@ const entitiesSlice = createSlice({
         queryEntities.fulfilled,
         (state, { payload }: PayloadAction<Entity[]>) => {
           state.loading = false;
-          state.initialized = true;
-          state.status = ResponseStatus.SUCCESS;
           const entitiesById: { [id: string]: Entity } = {};
           payload.forEach((entity) => {
             const { entityId, properties } = entity;
             const newProperties: { [propertyId: string]: string } = {};
             Object.entries(properties).forEach(([key, value]) => {
               const lowerCasedKey = key.toLowerCase();
-              newProperties[lowerCasedKey] = value;
+              newProperties[lowerCasedKey] = value as string;
             });
             entitiesById[entityId] = { ...entity, properties: newProperties };
           });
           state.entities = entitiesById;
+          state.initialized = true;
+          state.status = ResponseStatus.SUCCESS;
         }
       )
       .addCase(queryEntities.rejected, (state) => {
@@ -283,7 +366,7 @@ const entitiesSlice = createSlice({
             const newProperties: { [propertyId: string]: string } = {};
             Object.entries(properties).forEach(([key, value]) => {
               const lowerCasedKey = key.toLowerCase();
-              newProperties[lowerCasedKey] = value;
+              newProperties[lowerCasedKey] = value as string;
             });
             const score = roundScoreIntelligently(entityRanking?.score ?? 0.0);
             const rank = entityRanking?.rank ?? 0;
@@ -315,6 +398,7 @@ const entitiesSlice = createSlice({
           state.loading = false;
           const entitiesById = { ...state.entities };
           const entityId: string = payload.entityId as string;
+          const scoringResult: ScoringResult = payload.scoringResult;
           const rankingByEntities: { [entityId: string]: EntityRanking } = {
             [entityId]: payload,
           };
@@ -329,11 +413,55 @@ const entitiesSlice = createSlice({
               const newProperties = { ...properties };
               newProperties['score'] = score.toString();
               newProperties['rank'] = rank.toString();
-              const newEntity: Entity = {
-                ...entity,
-                properties: newProperties,
-              };
-              entitiesById[entityId] = newEntity;
+              if (scoringResult) {
+                const categories = scoringResult.attributes;
+                const newCategories: Attributes = [];
+                if (categories) {
+                  categories.forEach((category) => {
+                    const riskIndicators = category.attributes;
+                    const newRiskIndicators: Attributes = [];
+                    const {
+                      scoringDetailsJsonString: _scoringDetailsString,
+                      ...newCategory
+                    } = category;
+                    if (riskIndicators) {
+                      riskIndicators.forEach((riskIndicator) => {
+                        const {
+                          scoringDetailsJsonString: riskIndicatorJsonString,
+                          ...newRiskIndicator
+                        } = riskIndicator;
+                        const scoringDetailsJson = riskIndicatorJsonString
+                          ? JSON.parse(riskIndicatorJsonString)
+                          : undefined;
+                        newRiskIndicators.push({
+                          ...newRiskIndicator,
+                          scoringDetailsJson,
+                        });
+                      });
+                    }
+                    newCategories.push({
+                      ...newCategory,
+                      attributes: newRiskIndicators,
+                    });
+                  });
+                }
+                const newScoringResult = {
+                  ...scoringResult,
+                  attributes: newCategories,
+                };
+                const newEntity: Entity = {
+                  ...entity,
+                  properties: newProperties,
+                  scoringResult: newScoringResult,
+                };
+                entitiesById[entityId] = newEntity;
+              } else {
+                const newEntity: Entity = {
+                  ...entity,
+                  properties: newProperties,
+                };
+                entitiesById[entityId] = newEntity;
+              }
             }
           }
           state.entities = entitiesById;
@@ -348,6 +476,103 @@ const entitiesSlice = createSlice({
         state.rankingByEntityId = {};
         state.status = ResponseStatus.FAILED;
       })
+      .addCase(retrieveHistoricalDataForModelAndEntity.pending, (state) => {
+        state.loading = true;
+        state.initialized = false;
+        state.status = ResponseStatus.PENDING;
+      })
+      .addCase(
+        retrieveHistoricalDataForModelAndEntity.fulfilled,
+        (state, { payload }: PayloadAction<HistoricalRankingResult>) => {
+          state.loading = false;
+          const entitiesById: { [id: string]: Entity } = { ...state.entities };
+          const entityId: string = payload.entityId;
+          /* we create a linked list on this value, so we can see that the values are correct in timeline */
+          const historicalRankingByTimestamp: {
+            [dateString: string]: HistoricalRanking;
+          } = {};
+
+          const historicalRankingList: HistoricalRanking[] = [];
+          const entityIds: string[] = [];
+          payload.historicalRanking.forEach((historicalRankingValue) => {
+            const timeStampUTCMilliseconds: number =
+              historicalRankingValue.scoringInstance;
+            const date = new Date(timeStampUTCMilliseconds);
+            const dateString = formatDate(date);
+            const rankingString: string = historicalRankingValue.ranking;
+            const rankingValue = JSON.parse(rankingString);
+            const ranking: ScoringResult =
+              rankingValue.scoringResult as ScoringResult;
+            const entity: string = historicalRankingValue.entity;
+            const scoringInstance: number =
+              historicalRankingValue.scoringInstance;
+            const value: HistoricalRanking = {
+              entity,
+              scoringInstance,
+              ranking,
+              prev: null,
+              next: null,
+            };
+            /* We always get the latest value for historical ranking by timestamp */
+            historicalRankingByTimestamp[dateString] = value;
+            historicalRankingList.push(value);
+            entityIds.push(entity);
+          });
+          const historicalRankingLinkedList = historicalRankingList.map(
+            (value, index, array) => {
+              if (index === 0) {
+                return { ...value, prev: null, next: array[index + 1] };
+              } else if (index > 0 && index < array.length - 1) {
+                return {
+                  ...value,
+                  prev: array[index - 1],
+                  next: array[index + 1],
+                };
+              } else {
+                // (index > 0 && index === array.length - 1)
+                return { ...value, prev: array[index - 1], next: null };
+              }
+            }
+          );
+          if (!entityId) {
+            throw new Error('Entity ID not found in payload');
+          }
+          const entityIdsUnique = entityIds.filter(
+            (entityValue: string, index: number, array: string[]) =>
+              array.indexOf(entityValue) === index
+          );
+          if (entityIdsUnique.length !== 1) {
+            throw new Error(
+              `Need one entityId. Found: ${entityIdsUnique.toString()}`
+            );
+          }
+          const entityIdToOperate: string = entityIds[0];
+          if (entityIdToOperate !== entityId) {
+            throw new Error(
+              `Expected entity ID: ${entityId}. Got: ${entityIdToOperate}`
+            );
+          }
+          const currentEntity = entitiesById[entityId];
+          if (currentEntity) {
+            const newEntity: Entity = {
+              ...currentEntity,
+              entityHistoricalRanking: historicalRankingByTimestamp,
+            };
+            state.entities = { ...state.entities, [entityId]: newEntity };
+          }
+          state.historyByEntityId = {
+            ...state.historyByEntityId,
+            [entityId]: historicalRankingLinkedList,
+          };
+          state.initialized = true;
+          state.status = ResponseStatus.SUCCESS;
+        }
+      )
+      .addCase(retrieveHistoricalDataForModelAndEntity.rejected, (state) => {
+        state.loading = false;
+        state.initialized = true;
+        state.status = ResponseStatus.FAILED;
+      })
       .addCase(getEntityComments.pending, (state) => {
         state.loading = true;
         state.isCommentsInitialized = false;
@@ -358,7 +583,6 @@ const entitiesSlice = createSlice({
         (state, { payload }: PayloadAction<EntityReturn>) => {
           state.loading = false;
           state.initialized = true;
-          state.status = ResponseStatus.SUCCESS;
           const { entityId, entityComments } = payload;
           if (entityId) {
             const stateEntity = state.entities[entityId] ?? null;
@@ -368,6 +592,7 @@ const entitiesSlice = createSlice({
             }
           }
           state.isCommentsInitialized = true;
+          state.status = ResponseStatus.SUCCESS;
         }
       )
       .addCase(getEntityComments.rejected, (state) => {
@@ -422,7 +647,7 @@ const entitiesSlice = createSlice({
           state.initialized = true;
           const { entityId, entityStatus } = payload;
           if (entityId) {
-            const entityIdString = entityId.toString();
+            const entityIdString = entityId;
             const stateEntity = state.entities[entityIdString] ?? null;
             if (stateEntity) {
               const newEntity = {
@@ -458,17 +683,16 @@ const entitiesSlice = createSlice({
           state.initialized = true;
           const { entityId, entityStatus } = payload;
           if (entityId && entityStatus) {
-            const entityIdString = entityId.toString();
-            const stateEntity = state.entities[entityIdString] ?? null;
+            const stateEntity = state.entities[entityId] ?? null;
             if (stateEntity) {
               const newEntity = {
                 ...stateEntity,
-                entityId: entityIdString,
+                entityId,
                 entityStatus,
               };
               state.entities = {
                 ...state.entities,
-                [entityIdString]: newEntity,
+                [entityId]: newEntity,
               };
             }
           }
@@ -509,10 +733,93 @@ export const entityByIdSelector =
     return null;
   };
 
+export const hasEntitiesSelector =
+  (entityIds: string[]): ((state: RootState) => boolean[]) =>
+  (state: RootState) => {
+    if (entityIds && entityIds.length > 0) {
+      if (state.entities.entities) {
+        return entityIds.map(
+          (entityId: string) => entityId in state.entities.entities
+        );
+      }
+    }
+    return new Array(entityIds.length).fill(false);
+  };
+
+export const needsEntitiesSelector =
+  (entityIds: string[]): ((state: RootState) => string[]) =>
+  (state: RootState) => {
+    if (entityIds && entityIds.length > 0) {
+      if (state.entities.entities) {
+        const entityIdsSet = new Set(entityIds);
+        const stateEntities = new Set(Object.keys(state.entities.entities));
+        const setDifference = difference<string>(entityIdsSet, stateEntities);
+        return Array.from(setDifference);
+      }
+    }
+    return [...entityIds];
+  };
+
 export const entityPropertiesByIdSelector =
   (entityId: string): ((state: RootState) => PropertyType | undefined) =>
-  (state: RootState) =>
-    state.entities?.entities && state.entities?.entities[entityId].properties;
+  (state: RootState) => {
+    if (entityId && state.entities.entities) {
+      if (state.entities.entities[entityId]) {
+        const { properties } = state.entities.entities[entityId];
+        const newProperties = { ...properties };
+        const {
+          entityProperties: entityConfigProperties,
+          entityDetailProperties: entityConfigDetailProperties,
+        } = state.config.entities;
+        entityConfigProperties.forEach(
+          (entityConfigProperty: EntityPropertyBase | string) => {
+            if (
+              typeof entityConfigProperty === 'string' &&
+              !(entityConfigProperty in newProperties)
+            ) {
+              newProperties[entityConfigProperty] = '';
+            } else if (typeof entityConfigProperty === 'object') {
+              const entityConfigPropertyBase: EntityPropertyBase =
+                entityConfigProperty as EntityPropertyBase;
+              const { propertyName, values = [] } = entityConfigPropertyBase;
+              if (!(propertyName in newProperties)) {
+                newProperties[propertyName] = values
+                  ? values
+                      .map((value) => newProperties[value] ?? '')
+                      .join(' ')
+                      .trim()
+                  : '';
+              }
+            }
+          }
+        );
+        entityConfigDetailProperties.forEach(
+          (entityConfigProperty: EntityPropertyBase | string) => {
+            if (
+              typeof entityConfigProperty === 'string' &&
+              !(entityConfigProperty in newProperties)
+            ) {
+              newProperties[entityConfigProperty] = '';
+            } else if (typeof entityConfigProperty === 'object') {
+              const entityConfigPropertyBase: EntityPropertyBase =
+                entityConfigProperty as EntityPropertyBase;
+              const { propertyName, values = [] } = entityConfigPropertyBase;
+              if (!(propertyName in newProperties)) {
+                newProperties[propertyName] = values
+                  ? values
+                      .map((value) => newProperties[value] ?? '')
+                      .join(' ')
+                      .trim()
+                  : '';
+              }
+            }
+          }
+        );
+        return newProperties;
+      }
+    }
+    return undefined;
+  };
 
 export const convertEntityToDashboardTable = (
   entityProperties: PropertyType[] | null,
@@ -528,17 +835,89 @@ export const convertEntityToDashboardTable = (
   return properties;
 };
 
+const maskedTransformer: {
+  [key: string]: (
+    input: string | number | boolean | null
+  ) => string | number | boolean;
+} = {
+  score: (score: string | number | boolean | null): string | number | boolean =>
+    !!score && score,
+  name: (_name: string | number | boolean | null): string | number | boolean =>
+    'Unmask',
+  status: (
+    status: string | number | boolean | null
+  ): string | number | boolean => !!status && status,
+  rank: (rank: string | number | boolean | null): string | number | boolean =>
+    !!rank && rank,
+  location: (
+    location: string | number | boolean | null
+  ): string | number | boolean => !!location && location,
+};
+
+const defaultTransformer = (
+  _item: string | number | boolean | null
+): string | number | boolean => '';
+
 export const convertEntitiesPropertiesToDashBoardTable = (
   state: RootState
 ): PropertyType[] => {
   const entities: { [id: string]: Entity } =
     (state.entities?.entities && state?.entities?.entities) ?? null;
+  const isMaskingOn = getSystemMaskingSelector(state);
   if (entities) {
     return Object.entries(entities).map(
-      ([entityId, entity]: [entityid: string, entity: Entity]) => ({
-        ...entity.properties,
-        id: entityId,
-      })
+      ([entityId, entity]: [entityid: string, entity: Entity]) => {
+        const unmaskToken: string = entity.unmaskToken;
+        const maskedEntityStatus: string =
+          getMaskedEntityStatusSelector(entityId)(state);
+        const maskedEntityIcon: string =
+          maskedEntityStatus && maskedEntityStatus in entityMaskingIcons
+            ? entityMaskingIcons[maskedEntityStatus]
+            : '';
+        const existsPropertyMasked = existsInArray<
+          string | number | boolean | null
+        >(
+          Object.values(entity.properties ?? []),
+          (property: string | number | boolean | null) => {
+            if (property !== null) {
+              return property.toString() === MASKED_RESPONSE;
+            }
+            return false;
+          }
+        );
+        const maskedProperties: {
+          [key: string]: string | number | boolean | null;
+        } = {};
+        Object.entries(entity.properties).forEach(([key, value]) => {
+          if (
+            isMaskingOn &&
+            existsPropertyMasked &&
+            maskedEntityStatus !== 'approved'
+          ) {
+            if (key in maskedTransformer) {
+              maskedProperties[key] = maskedTransformer[key](value);
+            } else {
+              maskedProperties[key] = defaultTransformer(value);
+            }
+          } else {
+            maskedProperties[key] = value;
+          }
+        });
+        return {
+          ...maskedProperties,
+          id: entityId,
+          isMasked:
+            isMaskingOn &&
+            existsPropertyMasked &&
+            maskedEntityStatus !== 'approved',
+          maskingStatus:
+            isMaskingOn && existsPropertyMasked
+              ? maskedEntityStatus
+              : 'approved',
+          icon: isMaskingOn && existsPropertyMasked ? maskedEntityIcon : null,
+          unmaskToken,
+        };
+      }
     );
   }
   return [];
@@ -651,5 +1030,275 @@ export const isEntityStatusSuccess = (state: RootState): boolean =>
   state?.entities.status === ResponseStatus.SUCCESS;
 export const isEntityStatusFailed = (state: RootState): boolean =>
   state?.entities.status === ResponseStatus.FAILED;
+
+export const getHistoryByEntityId =
+  (entityId: string): ((state: RootState) => HistoricalRanking[]) =>
+  (state: RootState) => {
+    const entity =
+      (state?.entities?.entities && state?.entities?.entities[entityId]) ??
+      null;
+    if (entity) {
+      return entity.historyByEntityId[entityId] ?? [];
+    }
+    return [];
+  };
+
+export const formatHistoryByEntityid =
+  (
+    entityId: string
+  ): ((state: RootState) => { [dateString: string]: Attributes }) =>
+  (state: RootState) => {
+    if (!entityId) {
+      return {};
+    }
+    const entity =
+      (state?.entities?.entities && state?.entities?.entities[entityId]) ??
+      null;
+    if (entity) {
+      const historicalRankingByDate: {
+        [dateString: string]: HistoricalRanking;
+      } = entity.entityHistoricalRanking;
+      if (historicalRankingByDate) {
+        const historyFormatted: { [dateString: string]: Attributes } = {};
+        Object.entries(historicalRankingByDate).forEach(
+          ([dateString, value]) => {
+            if (!(dateString in historyFormatted)) {
+              historyFormatted[dateString] = [];
+            }
+            const scoringObject = value.ranking;
+            if (scoringObject) {
+              const categories = scoringObject.attributes;
+              categories.forEach((category) => {
+                const riskIndicators = category.attributes;
+                if (riskIndicators) {
+                  historyFormatted[dateString] = [
+                    ...historyFormatted[dateString],
+                    ...riskIndicators,
+                  ];
+                }
+              });
+            }
+          }
+        );
+        return historyFormatted;
+      }
+      return {};
+    }
+    return {};
+  };
+
+export const timeLineViewForEntityId =
+  (entityId: string): ((state: RootState) => ProfileTimeLineType[]) =>
+  (state: RootState) => {
+    const entity =
+      (state?.entities?.entities && state?.entities?.entities[entityId]) ??
+      null;
+    if (entity) {
+      const historicalRankingByDate: {
+        [dateString: string]: HistoricalRanking;
+      } = entity.entityHistoricalRanking;
+      const returnValues: ProfileTimeLineType[] = [];
+      if (historicalRankingByDate) {
+        Object.entries(historicalRankingByDate).map(
+          ([dateString, historicalRanking], mappingIndex) => {
+            const categories = historicalRanking.ranking?.attributes ?? [];
+            const categoryScores = categories.map((category) => category.score);
+            const categorySum = categoryScores.reduce(
+              (total, val) => total + val,
+              0
+            );
+            const averageScore = categorySum / categories.length;
+            let riskIndicatorIndex = 0;
+            const items: ProfileTimeLineRiskType[] = [];
+            categories.forEach((category) => {
+              const riskIndicatorsForCategory = category.attributes ?? [];
+              if (riskIndicatorsForCategory) {
+                riskIndicatorsForCategory.forEach((riskIndicator) => {
+                  const timelineItem: ProfileTimeLineRiskType = {
+                    id: riskIndicatorIndex,
+                    trend: riskIndicator.score,
+                    label: riskIndicator.name,
+                    up: 0,
+                    colorIndex: 0,
+                  };
+                  riskIndicatorIndex += 1;
+                  items.push(timelineItem);
+                });
+              }
+            });
+            const returnValue: ProfileTimeLineType = {
+              id: mappingIndex,
+              score: averageScore,
+              date: dateString,
+              items,
+            };
+            returnValues.push(returnValue);
+          }
+        );
+      }
+      return returnValues;
+    }
+    return [];
+  };
+
+export const getHistoricalDataForEntityId =
+  (entityId: string): ((state: RootState) => HistoricalDataForEntityId) =>
+  (state: RootState) => {
+    const entity =
+      (state?.entities?.entities && state?.entities?.entities[entityId]) ??
+      null;
+    if (entity) {
+      const historicalRankingByDate: {
+        [dateString: string]: HistoricalRanking;
+      } = entity.entityHistoricalRanking;
+      const historicalData: HistoricalDataForEntityId = {};
+      if (historicalRankingByDate) {
+        Object.entries(historicalRankingByDate).forEach(
+          ([dateString, historicalRanking]) => {
+            const historicalRankingCategories =
+              historicalRanking.ranking?.attributes ?? [];
+            const categories: HistoricalDataCategoryScore[] = [];
+            historicalRankingCategories.forEach((category) => {
+              const riskIndicatorsForCategory = category.attributes ?? [];
+              const riskIndicators: HistoricalDataRiskIndicatorScore[] = [];
+              if (riskIndicatorsForCategory) {
+                riskIndicatorsForCategory.forEach((riskIndicator) => {
+                  const historicalRiskIndicator: HistoricalDataRiskIndicatorScore =
+                    {
+                      name: riskIndicator.name,
+                      score: riskIndicator.score,
+                    };
+                  riskIndicators.push(historicalRiskIndicator);
+                });
+              }
+              categories.push({
+                name: category.name,
+                score: category.score,
+                riskIndicators,
+              });
+            });
+            historicalData[dateString] = categories;
+          }
+        );
+      }
+      return historicalData;
+    }
+    return {};
+  };
+
+export const getOutlierTableData =
+  (
+    entityId: string,
+    categoryIndex: number,
+    riskIndicatorIndex: number
+  ): ((state: RootState) => {
+    frameStart: number;
+    weekEpochs: number[];
+    values: ScatterDataPoint[];
+  }) =>
+  (
+    state
+  ): {
+    frameStart: number;
+    weekEpochs: number[];
+    values: ScatterDataPoint[];
+  } => {
+    const entity =
+      (state?.entities?.entities && state?.entities?.entities[entityId]) ??
+      null;
+    if (entity) {
+      const { scoringResult } = entity;
+      if (scoringResult) {
+        const { attributes: categories } = scoringResult;
+        if (
+          categories &&
+          categoryIndex >= 0 &&
+          categoryIndex < categories.length
+        ) {
+          const category = categories[categoryIndex];
+          const { attributes: riskIndicators } = category;
+          if (
+            riskIndicators &&
+            riskIndicatorIndex >= 0 &&
+            riskIndicatorIndex < riskIndicators.length
+          ) {
+            const riskIndicator: Attribute = riskIndicators[riskIndicatorIndex];
+            if (riskIndicator) {
+              const { scoringDetailsJson } = riskIndicator;
+              if (scoringDetailsJson) {
+                const returnValue: ScatterDataPoint[] = [];
+                const weekEpochs: number[] = [];
+                const { frames, startingEpoch } = scoringDetailsJson;
+                const frameMilliseconds = WEEK_AS_MILLISECONDS_FROM_EPOCH;
+                const hourMilliseconds = HOUR_AS_MILLISECONDS_FROM_EPOCH;
+                frames.forEach((frame: number[], frameIndex: number) => {
+                  const frameStartEpoch =
+                    startingEpoch + frameIndex * frameMilliseconds;
+                  weekEpochs.push(frameStartEpoch);
+                  frame.forEach((point: number, pointIndex: number) => {
+                    const pointEpoch = pointIndex * hourMilliseconds;
+                    if (point > 0) {
+                      returnValue.push({ x: pointEpoch, y: frameStartEpoch });
+                    }
+                  });
+                });
+                return {
+                  frameStart: startingEpoch,
+                  weekEpochs,
+                  values: returnValue,
+                };
+              }
+            }
+          }
+        }
+      }
+    }
+    return { frameStart: 0, weekEpochs: [], values: [] };
+  };
+
+export const getOutlierChartData =
+  (
+    entityId: string,
+    categoryIndex: number,
+    riskIndicatorIndex: number
+  ): ((
+    state: RootState
+  ) => ChartData<
+    'scatter',
+    (number | ScatterDataPoint | BubbleDataPoint | null)[]
+  >) =>
+  (state) => {
+    const { weekEpochs, values } = getOutlierTableData(
+      entityId,
+      categoryIndex,
+      riskIndicatorIndex
+    )(state);
+    return {
+      labels: weekEpochs,
+      datasets: [
+        {
+          label: 'Outlier by Time',
+          data: values,
+          fill: false,
+          backgroundColor: outlierColor,
+        },
+      ],
+    };
+  };
+
+export const getFrameStart =
+  (
+    entityId: string,
+    categoryIndex: number,
+    riskIndicatorIndex: number
+  ): ((state: RootState) => number) =>
+  (state) => {
+    const { frameStart } = getOutlierTableData(
+      entityId,
+      categoryIndex,
+      riskIndicatorIndex
+    )(state);
+    return frameStart;
+  };
 
 export default entitiesSlice.reducer;

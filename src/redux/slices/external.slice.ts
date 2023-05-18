@@ -6,6 +6,7 @@
 /**
  * Author: Ritesh Patel
  */
+
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppDispatch } from '@/redux/store';
 import { ReduxJson, ResponseStatus } from '@/types';

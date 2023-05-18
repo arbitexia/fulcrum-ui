@@ -47,3 +47,8 @@ export interface UISelectInterface {
   id: number | string;
   name: string;
 }
+
+export interface EditValueItemProps {
+  values: string[];
+  handleChange: (value: string[]) => void;
+}

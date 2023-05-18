@@ -6,9 +6,7 @@
 /**
  * Author: Diego Martinez
  */
-import React, { ChangeEvent, useState } from 'react';
-import Image from 'next/image';
-import { appImageLoader } from '@/libs/image-loader';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import { Typography, Box, IconButton } from '@mui/material';
 import {
   UIFlexSpaceBox,
@@ -20,25 +18,44 @@ import { Close } from '@mui/icons-material';
 import { CommentCard } from './CommentCard';
 import { DefaultModalProps } from '@/types';
 import { useAppDispatch, useAppSelector } from '@/hooks';
-import { getAccessToken, getCommentsForEntityId } from '@/redux/slices';
+import {
+  getCommentsForEntityId,
+  getEntityComments,
+  getIsCommentsInitialized,
+} from '@/redux/slices';
 import { NewEntityCommentsParams } from '@/types/entity.type';
 import { newEntityComment } from '@/redux/slices/entity.slice';
 
 interface CommentModalProps extends DefaultModalProps {
   entityId: string;
+  accessToken: string | null;
 }
 
 export const CommentModal = ({
   open,
   onClose,
   entityId,
+  accessToken = null,
 }: CommentModalProps): JSX.Element => {
   const dispatch = useAppDispatch();
-  const stateAccessToken = useAppSelector(getAccessToken);
-  const comments = useAppSelector(
-    getCommentsForEntityId(entityId.toString() as string)
-  );
+  const isCommentsInitialized = useAppSelector(getIsCommentsInitialized);
+  const comments = useAppSelector(getCommentsForEntityId(entityId as string));
   const [newComment, saveNewComment] = useState<string>('');
+  const [needsReload, setNeedsReload] = useState<boolean>(false);
+
+  useEffect(() => {
+    if ((needsReload || !isCommentsInitialized) && accessToken && entityId) {
+      setNeedsReload(false);
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        getEntityComments({
+          accessToken,
+          entityId,
+        })
+      );
+    }
+  }, [accessToken, entityId, dispatch, needsReload, isCommentsInitialized]);
 
   const dispatchSave = (args: NewEntityCommentsParams): Promise<unknown> => {
     return new Promise<void>((resolve) => {
@@ -50,6 +67,7 @@ export const CommentModal = ({
       resolve();
     });
   };
+
   const handleInputChange = (
     event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
   ): void => {
@@ -61,27 +79,34 @@ export const CommentModal = ({
   };
 
   const handleSave: () => void = () => {
-    if (newComment && stateAccessToken) {
+    if (newComment && accessToken) {
       dispatchSave({
-        accessToken: stateAccessToken,
-        entityId: entityId.toString(),
+        accessToken,
+        entityId: entityId,
         entityComment: newComment,
         author: 'Diego Martinez',
       }).then(() => {
-        onClose();
+        saveNewComment('');
+        setNeedsReload(true);
       });
-    } else {
-      onClose();
     }
   };
 
+  const handleClose: () => void = () => {
+    saveNewComment('');
+    setNeedsReload(true);
+    onClose();
+  };
+
   return (
-    <UISideDialog open={open} onClose={onClose} offset={68} width={575}>
+    <UISideDialog open={open} onClose={handleClose} offset={68} width={575}>
       <UIFlexSpaceBox sx={{ m: 0, p: 2 }}>
-        <Box></Box>
+        <Box sx={{ paddingTop: '9px' }}>
+          <Typography fontSize={16}>Comments</Typography>
+        </Box>
         <IconButton
           aria-label="close"
-          onClick={onClose}
+          onClick={handleClose}
           sx={{
             position: 'absolute',
             right: 15,
@@ -93,13 +118,12 @@ export const CommentModal = ({
         </IconButton>
       </UIFlexSpaceBox>
       <Box sx={{ px: 3, py: 2.5 }}>
-        <Typography fontSize={16}>Comments</Typography>
         <Box
           sx={{
             with: '481px',
             border: '1px solid #CCCCCC',
             borderRadius: '6px',
-            padding: '30px 25px 0px 25px',
+            padding: '0px 25px 0px 25px',
           }}
         >
           <UITextArea
@@ -107,25 +131,35 @@ export const CommentModal = ({
             rows={7}
             border="none"
             sx={{ width: '100%' }}
-            placeholder="Comment"
+            placeholder="Add New Comment"
             value={newComment}
             onChange={handleInputChange}
           />
-          <UIFlexSpaceBox sx={{ borderTop: '1px solid #EDEDED', py: '6px' }}>
-            <IconButton>
-              <Image
-                src={'images/icons/attachfile.svg'}
-                loader={appImageLoader}
-                width={24}
-                height={24}
-                alt="comment"
-              />
-            </IconButton>
-            <UIModalButton onClick={handleSave}>Save</UIModalButton>
+          <UIFlexSpaceBox
+            sx={{
+              borderTop: '1px solid #EDEDED',
+              py: '6px',
+              alignItems: 'flex-end',
+              justifyContent: 'flex-end',
+              padding: '10px 10px',
+            }}
+          >
+            {/*<IconButton>*/}
+            {/*  <Image*/}
+            {/*    src={'images/icons/attachfile.svg'}*/}
+            {/*    loader={appImageLoader}*/}
+            {/*    width={24}*/}
+            {/*    height={24}*/}
+            {/*    alt="comment"*/}
+            {/*  />*/}
+            {/*</IconButton>*/}
+            <UIFlexSpaceBox>
+              <UIModalButton onClick={handleSave}>Save</UIModalButton>
+            </UIFlexSpaceBox>
           </UIFlexSpaceBox>
         </Box>
-        {comments.map((comment) => {
-          return <CommentCard key={comment.id} comment={comment} />;
+        {comments?.map((comment, index) => {
+          return <CommentCard key={index} comment={comment} />;
         })}
       </Box>
     </UISideDialog>

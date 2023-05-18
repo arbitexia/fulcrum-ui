@@ -24,10 +24,12 @@ import {
   PaginateParam,
   PaginationState,
   ScoringRankingResult,
+  ScoringResult,
+  GetPeerAttributeRankingParams,
 } from '@/types';
-import { BubbleDataPoint, ChartData, ScatterDataPoint } from 'chart.js';
+import { ChartData } from 'chart.js';
 import { getColorPair } from '@/libs/color-generator';
-import { roundScore } from '@/libs/math-utils';
+import { returnScore, roundToSignificant } from '@/libs/math-utils';
 import {
   BasisPropertyType,
   Scoring,
@@ -36,7 +38,19 @@ import {
   RetrieveScoringCountParams,
   RetrieveBasisCountParams,
   BasisCount,
+  RetrieveHistoricalScoreDataForEntityParams,
+  HistoricalRankingResult,
+  HistoricalRanking,
+  HistoricalRankingBackend,
 } from '@/types/scoring.type';
+import {
+  GetPeerGroupHistoricalRankingParams,
+  GetPeerGroupRankingParams,
+  GetPeerGroupRankingResponse,
+  HistoricalPeerGroupType,
+  PeerAttributeData,
+} from '@/types/graph.type';
+import { sum } from 'lodash';
 import { checkAuthToken } from '@/libs/auth-token';
 
 const pageLimitDefault: { [pageName: string]: number } = {
@@ -48,10 +62,16 @@ const initialState: ReduxJson.ScoresState = {
   loading: true,
   scoresInitialized: false,
   countInitialized: false,
+  scoringReportInitialized: false,
+  scoringCategoriesInitialized: false,
+  categoriesCountInitialized: false,
+  scoringHistoryDataInitialized: false,
+  peerGroupHashInitialized: false,
+  peerGroupHistoricalHashesInitialized: false,
+  peerAttributeDataInitialized: false,
   status: null,
   entityModelId: null,
   entityRanking: [],
-  scoringReportInitialized: false,
   dataSourceId: '',
   beginCursor: '',
   endCursor: '',
@@ -59,8 +79,15 @@ const initialState: ReduxJson.ScoresState = {
   previousPageNumber: 0,
   pageLimit: null,
   basisReport: [],
+  scoringHistory: [],
   countRecords: 0,
   basisCursorByPageNumber: {},
+  peerGroupHashModelId: null,
+  peerGroupHash: null,
+  peerGroupHashCallFailed: {},
+  peerGroupHistoricalHashes: [],
+  peerAttributeData: null,
+  selectedCategories: undefined,
 };
 
 export const retrieveScores = createAsyncThunk<
@@ -70,8 +97,12 @@ export const retrieveScores = createAsyncThunk<
 >('scores/retrieveScores', async (params: RetrieveScoringParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
-    return await scoresDataApi.loadScoresData(params);
+     await checkAuthToken();
+    if (params.requestType && !params.categories) {
+      return await scoresDataApi.loadScoresData(params);
+    } else {
+      return await scoresDataApi.loadScoresDataForCategories(params);
+    }
   } catch (error) {
     const err = error as AxiosError;
     return thunkAPI.rejectWithValue(err.response?.data);
@@ -87,8 +118,12 @@ export const retrieveScoresCount = createAsyncThunk<
   async (params: RetrieveScoringCountParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
-      return await scoresDataApi.loadScoresCountData(params);
+       await checkAuthToken();
+      if (params.requestType && !params.categories) {
+        return await scoresDataApi.loadScoresCountData(params);
+      } else {
+        return await scoresDataApi.loadScoresCategoriesCountData(params);
+      }
     } catch (error) {
       const err = error as AxiosError;
       return thunkAPI.rejectWithValue(err.response?.data);
@@ -103,7 +138,7 @@ export const retrieveBasis = createAsyncThunk<
 >('scores/retrieveBasis', async (params: RetrieveBasisParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
+     await checkAuthToken();
     return await scoresDataApi.loadBasisData(params);
   } catch (error) {
     const err = error as AxiosError;
@@ -120,7 +155,7 @@ export const retrieveBasisCount = createAsyncThunk<
   async (params: RetrieveBasisCountParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
+       await checkAuthToken();
       return await scoresDataApi.loadBasisCountData(params);
     } catch (error) {
       const err = error as AxiosError;
@@ -138,8 +173,80 @@ export const retrieveScoresForEntity = createAsyncThunk<
   async (params: RetrieveScoresForEntityParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
+       await checkAuthToken();
       return await scoresDataApi.loadScoresForEntityData(params);
+    } catch (error) {
+      const err = error as AxiosError;
+      return thunkAPI.rejectWithValue(err.response?.data);
+    }
+  }
+);
+
+export const retrieveGroupHash = createAsyncThunk<
+  GetPeerGroupRankingResponse,
+  GetPeerGroupRankingParams,
+  { dispatch: AppDispatch; state: RootState }
+>(
+  'scores/retrieveGroupHash',
+  async (params: GetPeerGroupRankingParams, thunkAPI) => {
+    try {
+      // TODO - define the api auth token
+       await checkAuthToken();
+      return await scoresDataApi.loadPeerGroupHashRankingData(params);
+    } catch (error) {
+      const err = error as AxiosError;
+      return thunkAPI.rejectWithValue(err.response?.data);
+    }
+  }
+);
+
+export const retrieveHistoricalGroupHashes = createAsyncThunk<
+  HistoricalPeerGroupType[],
+  GetPeerGroupHistoricalRankingParams,
+  { dispatch: AppDispatch; state: RootState }
+>(
+  'scores/retrieveHistoricalGroupHashes',
+  async (params: GetPeerGroupHistoricalRankingParams, thunkAPI) => {
+    try {
+      // TODO - define the api auth token
+       await checkAuthToken();
+      return await scoresDataApi.loadPeerGroupHistoricalData(params);
+    } catch (error) {
+      const err = error as AxiosError;
+      return thunkAPI.rejectWithValue(err.response?.data);
+    }
+  }
+);
+
+export const retrievePeerAttributeData = createAsyncThunk<
+  PeerAttributeData,
+  GetPeerAttributeRankingParams,
+  { dispatch: AppDispatch; state: RootState }
+>(
+  'scores/retrievePeerAttributeData',
+  async (params: GetPeerAttributeRankingParams, thunkAPI) => {
+    try {
+      // TODO - define the api auth token
+       await checkAuthToken();
+      return await scoresDataApi.loadPeerAttributeRankingData(params);
+    } catch (error) {
+      const err = error as AxiosError;
+      return thunkAPI.rejectWithValue(err.response?.data);
+    }
+  }
+);
+
+export const retrieveHistoricalDataForModelAndEntity = createAsyncThunk<
+  HistoricalRankingResult,
+  RetrieveHistoricalScoreDataForEntityParams,
+  { dispatch: AppDispatch; state: RootState }
+>(
+  'scores/retrieveHistoricalDataForModelAndEntity',
+  async (params: RetrieveHistoricalScoreDataForEntityParams, thunkAPI) => {
+    try {
+      // TODO - define the api auth token
+       await checkAuthToken();
+      return await scoresDataApi.loadHistoricalDataForEntity(params);
     } catch (error) {
       const err = error as AxiosError;
       return thunkAPI.rejectWithValue(err.response?.data);
@@ -201,6 +308,34 @@ const scoringSlice = createSlice({
       }
       return state;
     },
+    setSelectedCategoriesState: (state, { payload }) => {
+      const { categories }: { categories?: string[] } = payload;
+      if (categories && categories.length > 0) {
+        return {
+          ...state,
+          beginCursor: '',
+          endCursor: '',
+          pageNumber: 1,
+          previousPageNumber: 0,
+          pageLimit: pageLimitDefault['home'],
+          scoringReportInitialized: false,
+          countInitialized: false,
+          selectedCategories: categories,
+        };
+      } else {
+        return {
+          ...state,
+          beginCursor: '',
+          endCursor: '',
+          pageNumber: 1,
+          previousPageNumber: 0,
+          pageLimit: pageLimitDefault['home'],
+          scoringReportInitialized: false,
+          countInitialized: false,
+          selectedCategories: undefined,
+        };
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -208,6 +343,7 @@ const scoringSlice = createSlice({
         state.loading = true;
         state.scoresInitialized = false;
         state.scoringReportInitialized = false;
+        state.countInitialized = false;
         state.status = ResponseStatus.PENDING;
       })
       .addCase(
@@ -322,6 +458,64 @@ const scoringSlice = createSlice({
         state.entityRanking = [];
         state.status = ResponseStatus.FAILED;
       })
+      .addCase(retrieveHistoricalDataForModelAndEntity.pending, (state) => {
+        state.loading = true;
+        state.scoringHistoryDataInitialized = false;
+        state.status = ResponseStatus.PENDING;
+      })
+      .addCase(
+        retrieveHistoricalDataForModelAndEntity.fulfilled,
+        (state, { payload }: PayloadAction<HistoricalRankingResult>) => {
+          state.loading = false;
+          state.entityModelId = payload.modelId;
+          state.scoringHistoryDataInitialized = true;
+          /* we create a linked list on this value so we can see that the values are correct in timeline */
+          const historicalRankingList: HistoricalRanking[] = [];
+          payload.historicalRanking.forEach(
+            (historicalRankingValue: HistoricalRankingBackend) => {
+              const rankingString: string = historicalRankingValue.ranking;
+              const rankingValue = JSON.parse(rankingString);
+              const ranking: ScoringResult =
+                rankingValue.scoringResult as ScoringResult;
+              const entity: string = historicalRankingValue.entity;
+              const scoringInstance: number =
+                historicalRankingValue.scoringInstance;
+              const value: HistoricalRanking = {
+                entity,
+                scoringInstance,
+                ranking,
+                prev: null,
+                next: null,
+              };
+              historicalRankingList.push(value);
+            }
+          );
+          const historicalRankingLinkedList = historicalRankingList.map(
+            (value, index, array) => {
+              if (index === 0) {
+                return { ...value, prev: null, next: array[index + 1] };
+              } else if (index > 0 && index < array.length - 1) {
+                return {
+                  ...value,
+                  prev: array[index - 1],
+                  next: array[index + 1],
+                };
+              } else {
+                // (index > 0 && index === array.length - 1)
+                return { ...value, prev: array[index - 1], next: null };
+              }
+            }
+          );
+          state.scoringHistory = historicalRankingLinkedList;
+          state.status = ResponseStatus.SUCCESS;
+        }
+      )
+      .addCase(retrieveHistoricalDataForModelAndEntity.rejected, (state) => {
+        state.loading = false;
+        state.scoringHistoryDataInitialized = true;
+        state.scoringHistory = [];
+        state.status = ResponseStatus.FAILED;
+      })
       .addCase(retrieveBasis.pending, (state) => {
         state.loading = true;
         state.scoringReportInitialized = false;
@@ -390,6 +584,92 @@ const scoringSlice = createSlice({
         state.loading = false;
         state.countInitialized = true;
         state.status = ResponseStatus.FAILED;
+      })
+      .addCase(retrieveGroupHash.pending, (state, { meta }) => {
+        state.loading = true;
+        state.peerGroupHashModelId = null;
+        state.peerGroupHash = null;
+        state.peerGroupHashInitialized = false;
+        const { arg } = meta;
+        const { modelId } = arg;
+        const peerGroupHashCallFailed = {
+          ...state.peerGroupHashCallFailed,
+          [modelId]: false,
+        };
+        state.peerGroupHashCallFailed = peerGroupHashCallFailed;
+        state.status = ResponseStatus.PENDING;
+      })
+      .addCase(
+        retrieveGroupHash.fulfilled,
+        (state, { payload }: PayloadAction<GetPeerGroupRankingResponse>) => {
+          state.loading = false;
+          const { modelId, peerGroupHash } = payload;
+          state.peerGroupHashModelId = modelId;
+          state.peerGroupHash = peerGroupHash;
+          state.peerGroupHashInitialized = true;
+          const peerGroupHashCallFailed = {
+            ...state.peerGroupHashCallFailed,
+            [modelId]: false,
+          };
+          state.peerGroupHashCallFailed = peerGroupHashCallFailed;
+          state.status = ResponseStatus.SUCCESS;
+        }
+      )
+      .addCase(retrieveGroupHash.rejected, (state, { meta }) => {
+        state.loading = false;
+        state.peerGroupHashModelId = null;
+        state.peerGroupHash = null;
+        state.peerGroupHashInitialized = true;
+        const { arg } = meta;
+        const { modelId } = arg;
+        const peerGroupHashCallFailed = {
+          ...state.peerGroupHashCallFailed,
+          [modelId]: true,
+        };
+        state.peerGroupHashCallFailed = peerGroupHashCallFailed;
+        state.status = ResponseStatus.FAILED;
+      })
+      .addCase(retrieveHistoricalGroupHashes.pending, (state) => {
+        state.loading = true;
+        state.peerGroupHistoricalHashes = [];
+        state.peerGroupHistoricalHashesInitialized = false;
+        state.status = ResponseStatus.PENDING;
+      })
+      .addCase(
+        retrieveHistoricalGroupHashes.fulfilled,
+        (state, { payload }: PayloadAction<HistoricalPeerGroupType[]>) => {
+          state.loading = false;
+          state.peerGroupHistoricalHashes = payload;
+          state.peerGroupHistoricalHashesInitialized = true;
+          state.status = ResponseStatus.SUCCESS;
+        }
+      )
+      .addCase(retrieveHistoricalGroupHashes.rejected, (state) => {
+        state.loading = false;
+        state.peerGroupHistoricalHashes = [];
+        state.peerGroupHistoricalHashesInitialized = true;
+        state.status = ResponseStatus.FAILED;
+      })
+      .addCase(retrievePeerAttributeData.pending, (state) => {
+        state.loading = true;
+        state.peerAttributeData = null;
+        state.peerAttributeDataInitialized = false;
+        state.status = ResponseStatus.PENDING;
+      })
+      .addCase(
+        retrievePeerAttributeData.fulfilled,
+        (state, { payload }: PayloadAction<PeerAttributeData>) => {
+          state.loading = false;
+          state.peerAttributeData = payload;
+          state.peerAttributeDataInitialized = true;
+          state.status = ResponseStatus.SUCCESS;
+        }
+      )
+      .addCase(retrievePeerAttributeData.rejected, (state) => {
+        state.loading = false;
+        state.peerAttributeData = null;
+        state.peerAttributeDataInitialized = true;
+        state.status = ResponseStatus.FAILED;
       });
   },
 });
@@ -399,9 +679,18 @@ export const entityScoringSelector = (state: RootState): EntityRanking[] =>
 
 export const barChartLabelsSelector = (state: RootState): string[] => {
   const entityRankingData = state.scores?.entityRanking ?? [];
-  return entityRankingData.map((entity: EntityRanking) =>
-    roundScore(entity.score).toString()
-  );
+  return entityRankingData.map((entity: EntityRanking) => {
+    const { scoringResult } = entity;
+    const { attributes: categories } = scoringResult;
+    const categoryArray = categories.map((category: Attribute) => {
+      const { score: categoryScore } = category;
+      const significanceScore = roundToSignificant(categoryScore, 4);
+      const roundedScore = returnScore(significanceScore);
+      return roundedScore;
+    });
+    const scoreSum = sum(categoryArray);
+    return scoreSum;
+  });
 };
 
 const barChartDataSetsSelector = (state: RootState): BarChartDataSets => {
@@ -411,16 +700,17 @@ const barChartDataSetsSelector = (state: RootState): BarChartDataSets => {
   const backGroundColors: { [name: string]: string } = {};
   entityRankingData.forEach((entity: EntityRanking) => {
     const { scoringResult } = entity;
-    const { attributes } = scoringResult;
-    attributes.forEach((attribute: Attribute, index: number) => {
-      const { name, score } = attribute;
-      const roundedScore = roundScore(score);
-      if (!(name in barchartGroupDictionary)) {
-        barchartGroupDictionary[name] = [roundedScore];
+    const { attributes: categories } = scoringResult;
+    categories.forEach((category: Attribute, index: number) => {
+      const { name: categoryName, score: categoryScore } = category;
+      const significanceScore = roundToSignificant(categoryScore, 4);
+      const roundedScore = returnScore(significanceScore);
+      if (!(categoryName in barchartGroupDictionary)) {
+        barchartGroupDictionary[categoryName] = [roundedScore];
         const colorPair = getColorPair(index);
-        backGroundColors[name] = colorPair.bgColor;
+        backGroundColors[categoryName] = colorPair.bgColor;
       } else {
-        barchartGroupDictionary[name].push(roundedScore);
+        barchartGroupDictionary[categoryName].push(roundedScore);
       }
     });
   });
@@ -442,10 +732,7 @@ export const categoriesSelector = (state: RootState): string[] => {
 
 export const barChartDataSelector = (
   state: RootState
-): ChartData<
-  'bar',
-  (number | ScatterDataPoint | BubbleDataPoint | null)[]
-> => ({
+): ChartData<'bar', number[]> => ({
   labels: barChartLabelsSelector(state),
   datasets: barChartDataSetsSelector(state),
 });
@@ -458,6 +745,9 @@ export const scoringPageInfoSelector =
     pageNumber: state?.scores?.pageNumber ?? 1,
     limit: state?.scores.pageLimit ?? pageLimitDefault[source],
   });
+
+export const getSelectedCategoriesSelector = (state: RootState): string[] =>
+  state?.scores?.selectedCategories ?? [];
 
 export const getCurrentPageInfoByPageNumber =
   (pageNumber: number, source: string) =>
@@ -493,6 +783,27 @@ export const basisReportSelector = (state: RootState): BasisPropertyType[] => {
   });
 };
 
+export const getPeerGroupHashModelId = (state: RootState): string | null => {
+  return state?.scores?.peerGroupHashModelId ?? null;
+};
+
+export const getPeerGroupHash = (state: RootState): number | null => {
+  return state?.scores?.peerGroupHash ?? null;
+};
+
+export const getPeerGroupHashCallFailed = (state: RootState): boolean => {
+  return state?.scores?.peerGroupHashCallFailed ?? false;
+};
+export const getPeerGroupHashCallFailedForModelId =
+  (modelId: string): ((state: RootState) => boolean) =>
+  (state: RootState): boolean => {
+    return state?.scores?.peerGroupHashCallFailed[modelId] ?? false;
+  };
+
+export const getHistoricalPeerGroupHashes = (state: RootState): number[] => {
+  return state?.scores?.peerGroupHistoricalHashes;
+};
+
 export const isScoringStatusPending = (state: RootState): boolean =>
   state?.scores.status === ResponseStatus.PENDING;
 export const isScoringStatusSuccess = (state: RootState): boolean =>
@@ -500,11 +811,17 @@ export const isScoringStatusSuccess = (state: RootState): boolean =>
 export const isScoringStatusFailed = (state: RootState): boolean =>
   state?.scores.status === ResponseStatus.FAILED;
 
+export const isScoringLoading = (state: RootState): boolean =>
+  state?.scores?.loading ?? false;
+
 export const isScoringReportInitializedSelector = (state: RootState): boolean =>
   state?.scores.scoringReportInitialized ?? false;
 
 export const isScoringInitializedSelector = (state: RootState): boolean =>
   state?.scores.scoresInitialized ?? false;
+
+export const getIsHistoricalDataInitialized = (state: RootState): boolean =>
+  state?.scores?.scoringHistoryDataInitialized ?? false;
 
 export const getScoringCurrentModelId = (state: RootState): string =>
   state?.scores.entityModelId ?? null;
@@ -515,6 +832,24 @@ export const getScoringCount = (state: RootState): number =>
 export const getIsScoringCountInitialized = (state: RootState): boolean =>
   state?.scores?.countInitialized ?? false;
 
-export const { changePageNumber, changeLimit, changeDataSourceId } =
-  scoringSlice.actions;
+export const getIsPeerGroupHashInitialized = (state: RootState): boolean =>
+  state?.scores?.peerGroupHashInitialized ?? false;
+
+export const getIsPeerGroupHistoricalHashesInitialized = (
+  state: RootState
+): boolean => state?.scores?.peerGroupHistoricalHashesInitialized ?? false;
+
+export const getIsPeerAttributeDataInitialized = (state: RootState): boolean =>
+  state?.scores?.peerAttributeDataInitialized ?? false;
+
+export const getPeerAttributeData = (
+  state: RootState
+): PeerAttributeData | null => state?.scores.peerAttributeData;
+
+export const {
+  changePageNumber,
+  changeLimit,
+  changeDataSourceId,
+  setSelectedCategoriesState,
+} = scoringSlice.actions;
 export default scoringSlice.reducer;

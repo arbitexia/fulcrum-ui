@@ -26,7 +26,6 @@ import {
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import {
   addNewList,
-  getAccessToken,
   getNewList,
   getSelectedListById,
   getSelectedListId,
@@ -40,12 +39,14 @@ import { formatListId } from '@/libs/string-utils';
 
 interface EditListModalProps extends DefaultModalProps {
   id: number | string | null;
+  accessToken: string | null;
 }
 
 export const EditListModal = ({
   open,
   onClose,
   id,
+  accessToken,
 }: EditListModalProps): JSX.Element => {
   const dispatch = useAppDispatch();
   const newListSelected: List | null = useAppSelector(getNewList);
@@ -55,7 +56,8 @@ export const EditListModal = ({
   );
   const currentList: List | null =
     id && existingListSelected ? existingListSelected : newListSelected;
-  const stateAccessToken = useAppSelector(getAccessToken);
+
+  const listModalTitle: string = id ? 'Edit List' : 'Create List';
 
   useEffect(() => {
     if (dispatch) {
@@ -96,22 +98,22 @@ export const EditListModal = ({
   };
 
   const handleSave: () => void = () => {
-    if (currentList && stateAccessToken) {
+    if (currentList && accessToken) {
       const listId = currentList.listId;
       const description = currentList.description;
-      const listValues = currentList.listValues;
-      if (listId && description && listValues) {
+      const listValues = removeBlankRows(currentList.listValues);
+      if (listId && listValues) {
         const newListId = formatListId(listId);
         dispatchSave({
-          accessToken: stateAccessToken,
+          accessToken,
           listId: newListId,
           listValues,
-          description,
+          description: description || '',
           owner: 'Diego Martinez',
           lastUpdateDate: new Date().getTime(),
         }).then(() => {
           dispatchRefresh({
-            accessToken: stateAccessToken,
+            accessToken,
             limit: 25,
           }).then(onClose);
         });
@@ -141,7 +143,7 @@ export const EditListModal = ({
     <UIDefaultDialog
       open={open}
       onClose={onClose}
-      title="Edit List"
+      title={listModalTitle}
       modalWidth="668px"
     >
       <UIFlexWrapBox sx={{ gap: 3, flexDirection: 'column' }}>
@@ -151,7 +153,7 @@ export const EditListModal = ({
               Value List Name
             </Typography>
             <UIDefaultTextField
-              value={currentList?.listId || ''}
+              defaultValue={currentList?.listId || ''}
               onChange={(event) => handleChange(event, 'updateValueListId')}
               variant="standard"
               sx={{ width: '209px' }}
@@ -163,7 +165,7 @@ export const EditListModal = ({
               Description
             </Typography>
             <UIDefaultTextField
-              value={currentList?.description || ''}
+              defaultValue={currentList?.description || ''}
               variant="standard"
               onChange={(event) =>
                 handleChange(event, 'updateValueListDescription')
@@ -191,7 +193,7 @@ export const EditListModal = ({
         </UIFlexWrapBox>
       </UIFlexWrapBox>
       <UIFlexCenterBox sx={{ mt: '36px', mb: '10px' }}>
-        <UIModalButton onClick={stateAccessToken ? handleSave : noop}>
+        <UIModalButton onClick={accessToken ? handleSave : noop}>
           Save
         </UIModalButton>
       </UIFlexCenterBox>

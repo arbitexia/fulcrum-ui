@@ -11,15 +11,32 @@ import { ResponseStatus, UISelectInterface } from './common.type';
 import { UserJson } from './user.type';
 import {
   EntityRanking,
+  HistoricalRanking,
   PaginationState,
   ScoreBasisResult,
 } from './scoring.type';
-import { List, Model, RiskIndicatorType } from './models.type';
+import { Filter, List, Model, RiskIndicatorType } from './models.type';
 import { Entity } from '@/types/entity.type';
-import { Stats } from '@/types/stats.type';
+import {
+  DataSourceStatByPopulationName,
+  Stats,
+  TopRiskIndicatorPercentage,
+  TriageAndAverageScore,
+} from '@/types/stats.type';
 import { EntityProperty } from '@/types/config.type';
-import { PeerDataType, GraphDataType } from './graph.type';
+import {
+  PeerDataType,
+  GraphDataType,
+  HistoricalPeerGroupType,
+  PeerAttributeData,
+} from './graph.type';
 import { ExternalApplication } from './profile.type';
+import { ExcelResponse } from './risk.type';
+import {
+  AuditEvent,
+  EntityStatusLog,
+  MaskingType,
+} from '@/types/governance.type';
 
 export declare namespace ReduxJson {
   export type CommonReduxData<T> = {
@@ -38,7 +55,6 @@ export declare namespace ReduxJson {
   export type ControlState = {
     loading: boolean;
     status: ResponseStatus | null;
-    scoringPaused: boolean;
   };
 
   export type UserState = {
@@ -65,6 +81,17 @@ export declare namespace ReduxJson {
         default: string;
         values: EntityProperty[];
       };
+      entityMaskingValues: {
+        default: string;
+        values: EntityProperty[];
+      };
+      homePageTopPercent: number;
+    };
+    riskIndicators: {
+      loading: boolean;
+      status: ResponseStatus | null;
+      initialized: boolean;
+      topNumberRiskIndicators: number;
     };
   };
 
@@ -81,11 +108,18 @@ export declare namespace ReduxJson {
     loading: boolean;
     scoresInitialized: boolean;
     countInitialized: boolean;
+    scoringReportInitialized: boolean;
+    scoringCategoriesInitialized: boolean;
+    categoriesCountInitialized: boolean;
+    scoringHistoryDataInitialized: boolean;
+    peerGroupHashInitialized: boolean;
+    peerGroupHistoricalHashesInitialized: boolean;
+    peerAttributeDataInitialized: boolean;
     status: ResponseStatus | null;
     entityModelId: string | null;
     entityRanking: EntityRanking[] | null;
-    scoringReportInitialized: boolean;
     basisReport: ScoreBasisResult[] | null;
+    scoringHistory: HistoricalRanking[] | null;
     dataSourceId: string;
     beginCursor: string;
     endCursor: string;
@@ -94,6 +128,12 @@ export declare namespace ReduxJson {
     pageLimit: number | null;
     countRecords: number;
     basisCursorByPageNumber: { [pageNumber: number]: PaginationState };
+    peerGroupHashModelId: string | null;
+    peerGroupHash: number | null;
+    peerGroupHashCallFailed: { [modelId: string]: boolean };
+    peerGroupHistoricalHashes: HistoricalPeerGroupType[];
+    peerAttributeData: PeerAttributeData | null;
+    selectedCategories?: string[];
   };
 
   export type ModelsState = {
@@ -109,9 +149,17 @@ export declare namespace ReduxJson {
     loading: boolean;
     status: ResponseStatus | null;
     isAttributesInitialized: boolean;
+    hasDeleteAttributeMessage: boolean;
     attributes: { [id: string]: RiskIndicatorType };
     newAttribute: RiskIndicatorType | null;
     currentAttributeId: string | null;
+  };
+  export type FiltersState = {
+    loading: boolean;
+    status: ResponseStatus | null;
+    filters: { [id: string]: Filter };
+    newFilter: Filter | null;
+    currentFilterId: string | null;
   };
 
   export type EntitiesState = {
@@ -122,14 +170,27 @@ export declare namespace ReduxJson {
     isCommentsInitialized: boolean;
     isStatusInitialized: boolean;
     rankingByEntityId: { [id: string]: EntityRanking };
+    historyByEntityId: { [id: string]: HistoricalRanking[] };
   };
 
   export type StatsState = {
     loading: boolean;
     initialized: boolean;
     status: ResponseStatus | null;
-    latestStatsByModelId: { [modelId: string]: Stats };
+    latestStatsByModelId: { [modelId: string]: Stats[] };
+    maxInstanceNumber: number;
+    statsByDataSourceId: {
+      [dataSourceId: string]: DataSourceStatByPopulationName;
+    };
+    topAttributesByModelIdInitialized: { [modelId: string]: boolean };
+    topAttributesByModelId: { [modelId: string]: TopRiskIndicatorPercentage[] };
+    countTriageByModelIdInitialized: { [modelId: string]: boolean };
+    countTriagedByModelId: { [modelId: string]: TriageAndAverageScore };
     selectedStats: Stats | null;
+    numberOfLeads: number | null;
+    numberOfLeadsInitialized: boolean;
+    numberOfCases: number | null;
+    numberOfCasesInitialized: boolean;
   };
 
   export type GraphState = {
@@ -143,5 +204,55 @@ export declare namespace ReduxJson {
     loading: boolean;
     status: ResponseStatus | null;
     externalData: ExternalApplication[];
+  };
+
+  export type RiskState = {
+    risks: [];
+    downloadStatus: ExcelResponse | null;
+  };
+
+  export type GovernanceState = {
+    systemMasking: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: boolean;
+    };
+    autoUnmaskPercent: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: number;
+    };
+    autoUnmaskTopCount: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: number;
+    };
+    remaskAfterDays: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: number;
+    };
+    entitiesToMask: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: { [entityId: string]: MaskingType };
+    };
+    auditEvents: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: AuditEvent[];
+    };
+    entityStatuses: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: EntityStatusLog[];
+    };
   };
 }

@@ -14,8 +14,10 @@ export const limitValue: (
 ) => number = (input: number, minimumValue: number, maximumValue: number) =>
   Math.min(Math.max(input, minimumValue), maximumValue);
 
-export const roundScore: (score: number) => number = (score: number): number =>
-  Math.round(score * 100);
+export const returnScore: (score: number, basis?: number) => number = (
+  score: number,
+  basis = 100
+): number => score * basis;
 
 export const roundScoreIntelligently: (score: number) => number = (
   score: number
@@ -27,3 +29,17 @@ export const roundScoreIntelligently: (score: number) => number = (
 export const convertScore: (score: number) => number = (
   score: number
 ): number => limitValue(score / 100, 0.0, 1.0);
+
+export const roundToSignificant: (
+  number: number,
+  significantDigits?: number
+) => number = (number: number, significantDigits = 2): number =>
+  Math.round(number * Math.pow(10, significantDigits)) /
+  Math.pow(10, significantDigits);
+
+export const roundScore: (
+  score: number,
+  basis?: number,
+  digits?: number
+) => number = (score: number, basis = 100, digits = 0): number =>
+  roundToSignificant(score * basis, digits);

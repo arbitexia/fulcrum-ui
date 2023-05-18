@@ -13,9 +13,9 @@ export default {
     AUTHOR: '',
     HOSTING_URL: process.env.HOSTING_URL,
   },
-  API_URL: process.env.API_URL,
   AUTHENTICATION_SERVICE: process.env.SERVICE_NAME,
   URLS: {
+    API: process.env.API_URL,
     SCORING: process.env.SCORING_URL,
     MODEL: process.env.MODEL_URL,
     STATS: process.env.STATS_URL,
@@ -24,8 +24,12 @@ export default {
     AUTHENTICATION: process.env.AUTHENTICATION_URL,
     CONFIG: process.env.CONFIG_URL,
     LISTS: process.env.LISTS_URL,
+    RISK: process.env.RISK_URL,
+    AUDIT: process.env.AUDIT_URL,
+    GOVERNANCE: process.env.GOVERNANCE_URL,
   },
   ACCESS_CONTROL_ALLOWED_METHODS: {
+    API: ['GET', 'POST'],
     SCORING: ['GET', 'POST'],
     MODEL: ['GET', 'POST'],
     STATS: ['GET', 'POST'],
@@ -34,5 +38,8 @@ export default {
     CONFIG: ['GET', 'POST'],
     AUTHENTICATION: ['GET'],
     LISTS: ['GET', 'POST'],
+    RISK: ['POST'],
+    AUDIT: ['POST'],
+    GOVERNANCE: ['POST'],
   },
 };

@@ -41,6 +41,7 @@ export const UIDefaultDialog = ({
   btnLoader,
   onBtnClick,
   modalWidth,
+  modalHeight,
   showSecondaryBtn,
   secondaryBtnClick,
   secondaryBtnText,
@@ -49,7 +50,13 @@ export const UIDefaultDialog = ({
   btnDisabled,
 }: UIDefaultDialogProps): JSX.Element => {
   return (
-    <StyledDialogBox onClose={onClose} open={open} width={modalWidth} fullWidth>
+    <StyledDialogBox
+      onClose={onClose}
+      open={open}
+      width={modalWidth}
+      height={modalHeight}
+      fullWidth
+    >
       {title ? (
         <StyledModalDialogTitle variant="h5">
           {title}
