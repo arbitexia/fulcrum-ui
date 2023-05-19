@@ -20,12 +20,17 @@ ChartJS.register(Title, Tooltip, Legend);
 export const modelList = {
   label: 'Model Name',
   items: [
-    { id: 1, name: 'Sabotage Model' },
-    { id: 2, name: 'Data Exfiltration Model' },
-    { id: 3, name: 'Disgruntlement Model' },
-    { id: 4, name: 'High risk infrequent events' },
-    { id: 5, name: 'Workplace Violence Model' },
-    { id: 6, name: 'Fraud Model' },
+    { id: 1, name: 'Combined Model' },
+    { id: 2, name: 'Sabotage Model' },
+    { id: 3, name: 'Data Exfiltration Model' },
+    { id: 4, name: 'Disgruntlement Model' },
+    { id: 5, name: 'High risk infrequent events' },
+    { id: 6, name: 'Workplace Violence Model' },
+    { id: 7, name: 'Fraud Model' },
+    {
+      id: 8,
+      name: 'Counterintelligence',
+    },
   ],
 };
 
@@ -56,6 +61,7 @@ export const populationList = {
     { id: 2, name: 'Engineering in Omaha' },
     { id: 3, name: 'Privileged Users' },
     { id: 4, name: 'Clearance Holders' },
+    { id: 5, name: 'Watch List #1' },
   ],
 };
 

@@ -9,6 +9,7 @@
 
 import React, { useEffect, useState } from 'react';
 import {
+  Box,
   Table,
   TableBody,
   TableHead,
@@ -16,29 +17,21 @@ import {
   TableSortLabel,
 } from '@mui/material';
 
+import { UIBorderCell, UINoBorderCell, UIVerticalArrow } from '@/components/UI';
 import {
-  UICheckbox,
-  UIDefaultTextField,
-  UIScorebox,
-  UIScoreChip,
-  UIBorderCell,
-  UINoBorderCell,
-} from '@/components/UI';
-import { getScoreColor } from '@/libs/color-generator';
-import {
-  ReportsColumnType,
-  StatusTableType,
   ProgramTableType,
-  UsageTableType,
+  ReportsColumnType,
+  OrganizationTableType,
 } from '@/types';
 import { stableSort } from '@/libs/sort-utils';
-import { roundScoreIntelligently } from '@/libs/math-utils';
+import { getColorPair } from '@/libs/color-generator';
 
-interface TableProps<T extends ReportsColumnType, U extends ProgramTableType> {
+interface TableProps<
+  T extends ReportsColumnType,
+  U extends ProgramTableType | OrganizationTableType
+> {
   columns: T[];
   rows: U[];
-  tableRole: string;
-  type: string;
   order: keyof U;
   unmaskFunction?: (value: U) => void;
   refresh?: boolean;
@@ -47,18 +40,10 @@ interface TableProps<T extends ReportsColumnType, U extends ProgramTableType> {
 
 export default function ReportsTable<
   T extends ReportsColumnType,
-  U extends ProgramTableType
+  U extends ProgramTableType | OrganizationTableType
 >(props: TableProps<T, U>): JSX.Element {
   type Order = 'asc' | 'desc';
-  const {
-    order: initialOrder,
-    rows,
-    columns,
-    type,
-    tableRole,
-    refresh,
-    setRefresh,
-  } = props;
+  const { order: initialOrder, rows, columns, refresh, setRefresh } = props;
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof U>(initialOrder);
   const [tableList, setTableList] = useState<U[] | null>(null);
@@ -162,19 +147,6 @@ export default function ReportsTable<
                   >
                     {c.headerName}
                   </TableSortLabel>
-                  {type !== 'unmask' && (
-                    <UIDefaultTextField
-                      variant="standard"
-                      sx={{
-                        marginTop: '.2rem',
-                        width: '100%',
-                        input: { color: '#000' },
-                      }}
-                      onChange={({ target }) =>
-                        handleSearch(c.id, target.value)
-                      }
-                    />
-                  )}
                 </React.Fragment>
               ) : (
                 c.headerName
@@ -188,20 +160,10 @@ export default function ReportsTable<
           stableSort<U>(tableList, getComparator(order, orderBy)).map(
             ([row, _], index) => {
               const isItemSelected = isSelected((row.name ?? '') as string);
-              const labelId = `enhanced-table-checkbox-${index}`;
-              const scoreValue: number | null =
-                type === 'unmask' && row && 'score' in row
-                  ? roundScoreIntelligently(
-                      (row && 'score' in row
-                        ? parseFloat(row.score as string)
-                        : 0.0) ?? 0
-                    )
-                  : null;
               return (
                 <TableRow
                   hover
                   onClick={() => handleClick((row.name ?? '') as string)}
-                  role={tableRole}
                   aria-checked={isItemSelected}
                   tabIndex={-1}
                   key={index}
@@ -209,15 +171,27 @@ export default function ReportsTable<
                 >
                   {columns.map((property, index) => {
                     const { id: propertyId } = property;
-                    return (
-                      <UIBorderCell key={`reports-${index}-${propertyId}`}>
-                        {
-                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                          // @ts-ignore
-                          row[propertyId]
-                        }
-                      </UIBorderCell>
-                    );
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore
+                    if (row[propertyId] === 'up') {
+                      return (
+                        <UIBorderCell key={`reports-${index}-${propertyId}`}>
+                          <Box width="12px">
+                            <UIVerticalArrow direction={0} color={'#a50000'} />
+                          </Box>
+                        </UIBorderCell>
+                      );
+                    } else {
+                      return (
+                        <UIBorderCell key={`reports-${index}-${propertyId}`}>
+                          {
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                            // @ts-ignore
+                            row[propertyId]
+                          }
+                        </UIBorderCell>
+                      );
+                    }
                   })}
                 </TableRow>
               );

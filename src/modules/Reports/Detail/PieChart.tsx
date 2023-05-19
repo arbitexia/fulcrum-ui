@@ -39,26 +39,7 @@ const PieChart: FC<PieChartProps> = ({ chartData }) => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: true,
-        position: 'bottom',
-        labels: {
-          usePointStyle: true,
-          pointStyle: 'circle',
-          textAlign: 'center',
-          boxWidth: 8,
-          boxHeight: 8,
-          generateLabels: (chart) => {
-            const datasets = chart.data.datasets;
-            const legendItem: LegendItem[] = datasets.map((data, i) => ({
-              text: data?.label ?? '',
-              fillStyle: data.borderColor as string,
-              strokeStyle: data.borderColor as string,
-              datasetIndex: i,
-            }));
-
-            return legendItem;
-          },
-        },
+        display: false,
       },
     },
   };

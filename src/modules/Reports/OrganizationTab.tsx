@@ -7,102 +7,77 @@
  * Author: Ritesh Patel
  */
 
-import React, { useState } from 'react';
-import { Box, Stack, TextField, Typography } from '@mui/material';
-import { UIFlexWrapBox, UIIOSSwitch } from '@/components/UI';
-import { GovernanceColumnType } from '@/types';
-
-const columns: GovernanceColumnType[] = [
-  { id: 'unmask', headerName: 'Unmask' },
-  {
-    id: 'score',
-    headerName: 'Risk Score',
-    sortable: true,
-  },
-  {
-    id: 'justification',
-    headerName: 'Justification',
-  },
-  {
-    id: 'name',
-    headerName: 'Name',
-  },
-  {
-    id: 'id',
-    headerName: 'EID',
-  },
-  {
-    id: 'title',
-    headerName: 'Title',
-  },
-  {
-    id: 'department',
-    headerName: 'Department',
-  },
-  {
-    id: 'location',
-    headerName: 'Location',
-  },
-];
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+import { UIFlexCenterBox, UISelect } from '@/components/UI';
+import { UIFlexEndBox } from '@/components/UI/Box';
+import {
+  chartDataRiskIndicator,
+  chartDataTotalRiskScore,
+  modelList,
+  organizationMetricsColumns,
+  organizationTableData,
+  populationList,
+} from '@/_mock';
+import ReportsTable from './ReportsTable';
+import { ReportsBarChart } from './Detail/BarChart';
 
 const OrganizationTab = (): JSX.Element => {
-  const [isMasking, setIsMasking] = useState(true);
+  const labels = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+  ];
+  const chartData = {
+    labels,
+    datasets: [
+      {
+        label: 'Dataset 1',
+        data: [100, 200, 300, 400, 500],
+        backgroundColor: 'rgb(39 123 210)',
+      },
+    ],
+  };
 
   return (
-    <Box sx={{ padding: '1rem 0' }}>
-      <Stack spacing={3}>
-        <UIFlexWrapBox sx={{ gap: 2, alignItems: 'center' }}>
-          <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-            Masking
-          </Typography>
-          <UIIOSSwitch
-            checked={isMasking}
-            onChange={(event) => setIsMasking(event.target.checked)}
-          />
-        </UIFlexWrapBox>
-        <UIFlexWrapBox sx={{ gap: 2, alignItems: 'center' }}>
-          <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-            Auto-unmask all individuals ranked in the top
-          </Typography>
-          <TextField
-            size="small"
-            type="number"
-            sx={{
-              width: '70px',
-              '.MuiInputBase-input': {
-                padding: 1,
-                color: '#0050BE',
-                textAlign: 'center',
-              },
-            }}
-            disabled={!isMasking}
-          />
-          <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-            percent
-          </Typography>
-        </UIFlexWrapBox>
-        <UIFlexWrapBox sx={{ gap: 2, alignItems: 'center' }}>
-          <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-            Re-mask individuals after
-          </Typography>
-          <TextField
-            size="small"
-            type="number"
-            sx={{
-              width: '70px',
-              '.MuiInputBase-input': {
-                padding: 1,
-                color: '#0050BE',
-                textAlign: 'center',
-              },
-            }}
-            disabled={!isMasking}
-          />
-          <Typography sx={{ fontSize: '13px', color: '#504F54' }}>
-            days
-          </Typography>
-        </UIFlexWrapBox>
-      </Stack>
+    <Box>
+      <UIFlexEndBox sx={{ gap: 4, mt: 2 }}>
+        <UISelect
+          value={1}
+          itemList={modelList.items}
+          label={modelList.label}
+          handleChange={(event) => {
+            // handleChange(event, 'changePopulation');
+          }}
+        />
+        <UISelect
+          value={1}
+          itemList={populationList.items}
+          handleChange={(event) => {}}
+          label={populationList.label}
+        />
+      </UIFlexEndBox>
+      <Typography sx={{ fontSize: '20px', fontWeight: 700 }}>
+        Total Risk Score Summary Statistics
+      </Typography>
+      <UIFlexCenterBox sx={{ my: 4 }}>
+        <ReportsBarChart chartData={chartDataTotalRiskScore} isTitle={true} />
+      </UIFlexCenterBox>
+      <Typography sx={{ fontSize: '20px', fontWeight: 700 }}>
+        Number of individuals per Risk Indicator
+      </Typography>
+      <ReportsTable
+        columns={organizationMetricsColumns}
+        rows={organizationTableData}
+        order="name"
+      />
+      <UIFlexCenterBox sx={{ my: 4 }}>
+        <ReportsBarChart chartData={chartDataRiskIndicator} />
+      </UIFlexCenterBox>
     </Box>
   );
 };

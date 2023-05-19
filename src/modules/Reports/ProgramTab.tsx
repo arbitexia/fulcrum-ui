@@ -26,9 +26,16 @@ import PieChart from './Detail/PieChart';
 import StackedBarChart from './Detail/StackedBarChart';
 import { StatusDict, getStatusColor } from '@/libs/color-generator';
 import ReportsTable from './ReportsTable';
-import { ProgramTableType, ReportsColumnType } from '@/types';
 import { UIFlexEndBox } from '@/components/UI/Box';
 import { appImageLoader } from '@/libs/image-loader';
+import {
+  PersonsPerChartData,
+  programMetricsColumns,
+  programTableData,
+  riskStatusChartData,
+  statusOverTimeChartData,
+} from '@/_mock';
+import { personsPerList, totalStatus } from '@/constants';
 
 const ProgramTab = (): JSX.Element => {
   const [startValue, setStartValue] = React.useState<Dayjs | null>(
@@ -38,142 +45,6 @@ const ProgramTab = (): JSX.Element => {
     dayjs('2022-04-17')
   );
 
-  const testChartData = {
-    labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-    datasets: [
-      {
-        label: '# of Votes',
-        data: [12, 19, 3, 5, 2, 3],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(255, 206, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)',
-          'rgba(153, 102, 255, 0.2)',
-          'rgba(255, 159, 64, 0.2)',
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-          'rgba(255, 159, 64, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
-  const labels = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-  ];
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: 'Dataset 1',
-        data: [-1000, 1000],
-        backgroundColor: 'rgb(255, 99, 132)',
-      },
-      {
-        label: 'Dataset 2',
-        data: [-1000, 1000],
-        backgroundColor: 'rgb(75, 192, 192)',
-      },
-      {
-        label: 'Dataset 3',
-        data: [-1000, 1000],
-        backgroundColor: 'rgb(53, 162, 235)',
-      },
-    ],
-  };
-  const totalStatus = {
-    default: 'New',
-    values: [
-      'New',
-      'In-Progress',
-      'Reviewed',
-      'Case Opened',
-      'Corrective Action',
-      'Case Closed',
-    ],
-  };
-  const personsPerList = {
-    items: [
-      {
-        id: 1,
-        name: 'Job Title',
-      },
-      {
-        id: 1,
-        name: 'Location',
-      },
-      {
-        id: 1,
-        name: 'Business Unit',
-      },
-      {
-        id: 1,
-        name: 'Clearance',
-      },
-      {
-        id: 1,
-        name: 'Employee Status',
-      },
-    ],
-    label: '',
-  };
-
-  const columns: ReportsColumnType[] = [
-    {
-      id: 'status',
-      headerName: 'Individual Status Change',
-    },
-    {
-      id: 'date',
-      headerName: 'Date/Time',
-      sortable: true,
-    },
-    {
-      id: 'analyst',
-      headerName: 'Analyst',
-    },
-    {
-      id: 'name',
-      headerName: 'Name',
-    },
-    {
-      id: 'eid',
-      headerName: 'EID',
-    },
-    {
-      id: 'title',
-      headerName: 'Title',
-    },
-    {
-      id: 'businessArea',
-      headerName: 'Business Area',
-    },
-  ];
-
-  const programTableData: ProgramTableType[] = [
-    {
-      id: 1,
-      status: 'In-Progress',
-      date: '2022-04--22T08:15:30-05:00',
-      analyst: 'John Thomas',
-      name: 'Matt Dickson',
-      eid: 125601,
-      title: 'Nuclear Engineer',
-      businessArea: 'Engineering',
-    },
-  ];
   return (
     <Box sx={{ padding: '1rem 0' }}>
       <UIFlexWrapBox sx={{ gap: 2, alignItems: 'center' }}>
@@ -203,7 +74,7 @@ const ProgramTab = (): JSX.Element => {
             Risk Status Summary
           </Typography>
           <Box>
-            <PieChart chartData={testChartData} />
+            <PieChart chartData={riskStatusChartData} />
           </Box>
         </UIFlexColumnBox>
         <UIFlexColumnBox sx={{ width: '100%' }}>
@@ -213,7 +84,7 @@ const ProgramTab = (): JSX.Element => {
             Status over Time
           </Typography>
           <Box>
-            <StackedBarChart chartData={data} />
+            <StackedBarChart chartData={statusOverTimeChartData} />
           </Box>
         </UIFlexColumnBox>
       </UIFlexWrapBox>
@@ -275,7 +146,7 @@ const ProgramTab = (): JSX.Element => {
         </UIFlexCenterBox>
       </UIFlexCenterBox>
       <UIFlexCenterBox sx={{ mt: 4 }}>
-        <PieChart chartData={testChartData} />
+        <PieChart chartData={PersonsPerChartData} />
       </UIFlexCenterBox>
       <Box sx={{ my: 8 }}>
         <UIFlexEndBox sx={{ mb: 2 }}>
@@ -295,11 +166,9 @@ const ProgramTab = (): JSX.Element => {
           </IconButton>
         </UIFlexEndBox>
         <ReportsTable
-          columns={columns}
+          columns={programMetricsColumns}
           rows={programTableData}
           order="name"
-          type="unmask"
-          tableRole="checkbox"
         />
       </Box>
     </Box>

@@ -12,13 +12,11 @@ import {
   Chart as ChartJS,
   BarElement,
   PointElement,
-  LineElement,
   ChartOptions,
   Filler,
   Tooltip,
   Legend,
   ChartData,
-  LegendItem,
   CategoryScale,
   LinearScale,
   Title,
@@ -43,47 +41,26 @@ type StackedBarChartProps = {
 const StackedBarChart: FC<StackedBarChartProps> = ({ chartData }) => {
   const chartRef = useRef(null);
   const chartOptions: ChartOptions<'bar'> = {
-    maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: true,
-        position: 'bottom',
-        labels: {
-          usePointStyle: true,
-          pointStyle: 'circle',
-          textAlign: 'center',
-          boxWidth: 8,
-          boxHeight: 8,
-          generateLabels: (chart) => {
-            const datasets = chart.data.datasets;
-            const legendItem: LegendItem[] = datasets.map((data, i) => ({
-              text: data?.label ?? '',
-              fillStyle: data.borderColor as string,
-              strokeStyle: data.borderColor as string,
-              datasetIndex: i,
-            }));
-
-            return legendItem;
-          },
-        },
-      },
-    },
-  };
-
-  const options = {
-    plugins: {
-      title: {
-        display: true,
-        text: 'Chart.js Bar Chart - Stacked',
+        display: false,
       },
     },
     responsive: true,
     scales: {
       x: {
         stacked: true,
+        title: {
+          display: false,
+        },
       },
       y: {
         stacked: true,
+        title: {
+          display: true,
+          text: 'Persons of Concern',
+          font: { size: 22, weight: '700' },
+        },
       },
     },
   };

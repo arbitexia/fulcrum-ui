@@ -111,4 +111,8 @@ export type {
 } from './governance.type';
 
 export type { AccessTokenType } from './auth.type';
-export type { ReportsColumnType, ProgramTableType } from './reports.type';
+export type {
+  ReportsColumnType,
+  ProgramTableType,
+  OrganizationTableType,
+} from './reports.type';

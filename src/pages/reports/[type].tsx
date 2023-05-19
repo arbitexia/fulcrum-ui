@@ -14,23 +14,23 @@ import { useTheme } from '@mui/system';
 import { Tab } from '@mui/material';
 import { useRouter } from 'next/router';
 import { noop } from 'lodash';
-
-const tabData = [
-  {
-    label: 'Program Metrics',
-    url: 'program-metrics',
-  },
-  {
-    label: 'Organization Metrics',
-    url: 'organization-metrics',
-  },
-];
+import { reportsTabData } from '@/constants';
 
 const ReportsPage = (): JSX.Element => {
   const theme = useTheme();
   const router = useRouter();
   const { type: activeTab } = router.query as { type: string };
   const [value, setValue] = useState<number>(0);
+
+  useEffect(() => {
+    const tabIndexElement = reportsTabData.find(
+      (item) => item.url === activeTab
+    );
+    const tabIndex = tabIndexElement
+      ? reportsTabData.indexOf(tabIndexElement)
+      : 0;
+    setValue(tabIndex);
+  }, [setValue, activeTab]);
 
   const handleTabChange = (val: string): void => {
     router.push(`/reports/${val}`).then(noop);
@@ -56,7 +56,7 @@ const ReportsPage = (): JSX.Element => {
           value={value}
           noBorder={true}
         >
-          {tabData?.map(({ label, url }, index) => (
+          {reportsTabData?.map(({ label, url }, index) => (
             <Tab
               key={index}
               disableRipple

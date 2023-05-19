@@ -24,3 +24,12 @@ export type ProgramTableType = {
   title: string;
   businessArea: string;
 };
+
+export type OrganizationTableType = {
+  id: number;
+  name: string;
+  category: string;
+  percentPopulation: number;
+  numberOfIndividuals: number;
+  trend: string;
+};
