@@ -30,7 +30,7 @@ export const sidebarMenus: SideBarMenu[] = [
   },
   {
     name: 'reports',
-    route: '/reports/program',
+    route: '/reports/program-metrics',
     imgPath: 'images/icons/chart.svg',
     title: 'Reports',
   },

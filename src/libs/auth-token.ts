@@ -7,13 +7,13 @@
  * Author: Ritesh Patel
  */
 import { authApi } from '@/redux/apis';
-import { read_cookie, write_cookie } from './cookies';
+import { readCookie, writeCookie } from './cookies';
 import jwt_decode, { JwtPayload } from 'jwt-decode';
 import { AccessTokenType } from '@/types';
 
 export const checkAuthToken = async (): Promise<AccessTokenType> => {
-  const accessToken = read_cookie('accessToken');
-  const refreshToken = read_cookie('refreshToken');
+  const accessToken = readCookie('accessToken');
+  const refreshToken = readCookie('refreshToken');
 
   try {
     const decoded: JwtPayload = jwt_decode(accessToken as string);
@@ -27,8 +27,8 @@ export const checkAuthToken = async (): Promise<AccessTokenType> => {
       });
 
       if (result) {
-        write_cookie('accessToken', result?.accessToken ?? '', new Date());
-        write_cookie('refreshToken', result?.refreshToken ?? '', new Date());
+        writeCookie('accessToken', result?.accessToken ?? '', new Date());
+        writeCookie('refreshToken', result?.refreshToken ?? '', new Date());
         return result;
       } else {
         return {

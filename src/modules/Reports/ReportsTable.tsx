@@ -210,7 +210,7 @@ export default function ReportsTable<
                   {columns.map((property, index) => {
                     const { id: propertyId } = property;
                     return (
-                      <UIBorderCell key={index}>
+                      <UIBorderCell key={`reports-${index}-${propertyId}`}>
                         {
                           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore

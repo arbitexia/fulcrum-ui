@@ -6,7 +6,7 @@
 /**
  * Author: Ritesh Patel
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/layouts';
 import { UIContainer, UITabWrapper } from '@/components/UI';
 import { ReportsNavBar, ReportsTabs } from '@/modules/Reports';
@@ -18,11 +18,11 @@ import { noop } from 'lodash';
 const tabData = [
   {
     label: 'Program Metrics',
-    url: 'program',
+    url: 'program-metrics',
   },
   {
     label: 'Organization Metrics',
-    url: 'organization',
+    url: 'organization-metrics',
   },
 ];
 
@@ -35,7 +35,6 @@ const ReportsPage = (): JSX.Element => {
   const handleTabChange = (val: string): void => {
     router.push(`/reports/${val}`).then(noop);
   };
-
   return (
     <DashboardLayout
       title="Reports"

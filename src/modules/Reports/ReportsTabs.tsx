@@ -10,13 +10,15 @@
 import React from 'react';
 import ProgramTab from './ProgramTab';
 import OrganizationTab from './OrganizationTab';
-
+import { Box } from '@mui/material';
+import { useRouter } from 'next/router';
 const ReportsTabs = ({ url }: { url: string }): JSX.Element => {
+  const router = useRouter();
   return (
-    <>
-      {url === 'program' && <ProgramTab />}
-      {url === 'organization' && <OrganizationTab />}
-    </>
+    <Box>
+      {url === 'program-metrics' && <ProgramTab />}
+      {url === 'organization-metrics' && <OrganizationTab />}
+    </Box>
   );
 };
 

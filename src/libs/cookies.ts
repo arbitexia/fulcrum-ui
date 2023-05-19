@@ -6,7 +6,7 @@
 /**
  * Author: Ritesh patel
  */
-export const write_cookie = (
+export const writeCookie = (
   name: string,
   value: string,
   date: Date | string | null
@@ -25,7 +25,7 @@ export const write_cookie = (
   document.cookie = cookie;
 };
 
-export const read_cookie = (name: string): string | string[] | null => {
+export const readCookie = (name: string): string | string[] | null => {
   let result: RegExpMatchArray | string | string[] | null =
     document.cookie.match(new RegExp(name + '=([^;]+)'));
   result = result != undefined ? result[1] : [];
