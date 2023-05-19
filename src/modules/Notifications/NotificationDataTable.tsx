@@ -7,7 +7,7 @@
  * Author: Ritesh Patel
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -33,6 +33,13 @@ import { roundScoreIntelligently } from '@/libs/math-utils';
 import { getScoreColor } from '@/libs/color-generator';
 import { appImageLoader } from '@/libs/image-loader';
 import { noop } from 'lodash';
+import { NewMaskingStatusParams } from '@/types/governance.type';
+import {
+  removeNotification,
+  removeNotificationEvent,
+  setNewMasking,
+} from '@/redux/slices';
+import { useAppDispatch } from '@/hooks';
 
 interface IRequiredProps {
   [key: string]: unknown;
@@ -46,11 +53,34 @@ interface INotificationDataTableProps<
   T extends IRequiredProps,
   U extends IRequiredProps
 > {
+  accessToken: string;
   columns: T[];
   rows: U[];
   tableRole: string;
   type: string;
   orderField: keyof U;
+  setOpenEditDialog: () => void;
+  setNotificationId: (notificationId: string) => void;
+  setNotificationType: (notificationType: string) => void;
+  setModelId: (modelId: string) => void;
+  setCategoryName: (categoryName: string) => void;
+  setThreshold: (threshold: number) => void;
+  useInputs: (inputs: boolean) => void;
+  submitNotificationChange: ({
+    notificationId,
+    notificationType,
+    modelId,
+    categoryName,
+    threshold,
+    active,
+  }: {
+    notificationId: string | null;
+    notificationType: string;
+    modelId: string;
+    categoryName: string;
+    threshold: number;
+    active?: boolean;
+  }) => void;
 }
 
 type OrderDirection = 'asc' | 'desc';
@@ -60,21 +90,16 @@ export default function NotificationDataTable<
   U extends IRequiredProps
 >(props: INotificationDataTableProps<T, U>): JSX.Element {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { type: activeTab } = router.query as { type: string };
 
   const [orderDirection, setOrderDirection] = useState<OrderDirection>('asc');
   const [orderField, setOrderField] = useState<keyof U>(props.orderField);
   const [isOpenJusDlg, setOpenJusDlg] = useState<boolean>(false);
-  const [masking, setMasking] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (activeTab === NOTIFICATION_TAB.MANAGE) {
-      const arr = props.rows
-        .filter((row) => row.isMasking)
-        .map((row) => row.id);
-      setMasking(arr);
-    }
-  }, [activeTab, props.rows]);
+  const [entityId, setEntityId] = useState<string | null>(null);
+  const [score, setScore] = useState<string | null>(null);
+  const [modelId, setModelId] = useState<string | null>(null);
+  const [scoringInstance, setScoringInstance] = useState<number | null>(null);
 
   const descendingComparator = (
     a: U,
@@ -113,14 +138,6 @@ export default function NotificationDataTable<
       handleRequestSort(event, property);
     };
 
-  const handleChangeMask = (index: string): void => {
-    if (masking.some((mask) => mask === index)) {
-      setMasking(masking.filter((mask) => mask !== index));
-    } else {
-      setMasking([...masking, index]);
-    }
-  };
-
   const headCellRenderer = (cell: T, index: number): JSX.Element => (
     <UIBorderCell
       align={cell.id === 'action' ? 'center' : 'left'}
@@ -137,7 +154,8 @@ export default function NotificationDataTable<
   );
 
   const renderCell = (
-    cells: { field: string; val: string }[]
+    cells: { field: string; val: string }[],
+    row: U
   ): { [key: string]: JSX.Element } => {
     const elements = cells.map((cell, index) => {
       const key = `notification-cell-${cell.field}-${index}`;
@@ -169,6 +187,10 @@ export default function NotificationDataTable<
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
                   setOpenJusDlg(true);
+                  setModelId(row.model as string);
+                  setScore(row.score as string);
+                  setScoringInstance(row.scoringInstance as number);
+                  setEntityId(row.entityId as string);
                 }}
               />
             ) : (
@@ -188,6 +210,23 @@ export default function NotificationDataTable<
             </UIScorebox>
           </UIBorderCell>
         ),
+        active: (
+          <UIBorderCell key={key}>
+            <UIIOSSwitch
+              checked={row.active as boolean}
+              onChange={() =>
+                props.submitNotificationChange({
+                  notificationId: row.id as string,
+                  notificationType: row.notificationType as string,
+                  modelId: row.model as string,
+                  categoryName: row.category as string,
+                  threshold: parseInt(row.threshold as string),
+                  active: row.active !== true,
+                })
+              }
+            />
+          </UIBorderCell>
+        ),
       };
       return element;
     });
@@ -203,6 +242,34 @@ export default function NotificationDataTable<
     return result;
   };
 
+  const deleteNotification = (notificationId: string): void => {
+    dispatch(
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      removeNotification({
+        accessToken: props.accessToken,
+        notificationId,
+      })
+    );
+  };
+
+  const deleteNotificationEvent = (
+    notificationId: string,
+    deleteEntityId: string,
+    deleteScoringInstance: number
+  ): void => {
+    dispatch(
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      removeNotificationEvent({
+        accessToken: props.accessToken,
+        notificationId,
+        entityId: deleteEntityId,
+        scoringInstance: deleteScoringInstance,
+      })
+    );
+  };
+
   const rowRenderer = (row: U, rowIndex: number, columns: T[]): JSX.Element => {
     const cells = columns.map((col) => {
       const field = col.field as string;
@@ -212,7 +279,7 @@ export default function NotificationDataTable<
 
     return (
       <TableRow hover role={props.tableRole} tabIndex={-1} key={rowIndex}>
-        {columns.map((col) => renderCell(cells)[col.field as string])}
+        {columns.map((col) => renderCell(cells, row)[col.field as string])}
         {activeTab === NOTIFICATION_TAB.VIEW && (
           <UIBorderCell align="center">
             <Image
@@ -223,7 +290,11 @@ export default function NotificationDataTable<
               alt="delete"
               style={{ cursor: 'pointer' }}
               onClick={() => {
-                console.log('delete');
+                deleteNotificationEvent(
+                  row.id as string,
+                  row.entityId as string,
+                  row.scoringInstance as number
+                );
               }}
             />
           </UIBorderCell>
@@ -231,10 +302,6 @@ export default function NotificationDataTable<
         {activeTab === NOTIFICATION_TAB.MANAGE && (
           <UIBorderCell align="center">
             <UIFlexWrapBox sx={{ justifyContent: 'space-evenly' }}>
-              <UIIOSSwitch
-                checked={masking.some((mask) => mask === row.id)}
-                onChange={() => handleChangeMask(row.id)}
-              />
               <Image
                 src={ICON_URLS.edit}
                 loader={appImageLoader}
@@ -243,7 +310,13 @@ export default function NotificationDataTable<
                 alt="edit"
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
-                  console.log('edit');
+                  props.setNotificationId(row.id as string);
+                  props.setNotificationType(row.notificationType as string);
+                  props.setModelId(row.model as string);
+                  props.setCategoryName(row.category as string);
+                  props.setThreshold(parseFloat(row.threshold as string));
+                  props.useInputs(true);
+                  props.setOpenEditDialog();
                 }}
               />
               <Image
@@ -254,7 +327,7 @@ export default function NotificationDataTable<
                 alt="delete"
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
-                  console.log('delete');
+                  deleteNotification(row.id as string);
                 }}
               />
             </UIFlexWrapBox>
@@ -263,6 +336,38 @@ export default function NotificationDataTable<
       </TableRow>
     );
   };
+
+  const justificationFn = (
+    selectedItems: string[],
+    justificationText: string
+  ): void => {
+    if (
+      entityId !== null &&
+      score !== null &&
+      modelId !== null &&
+      scoringInstance !== null
+    ) {
+      const args: NewMaskingStatusParams = {
+        accessToken: props.accessToken,
+        userId: '',
+        entityId,
+        status: 'in-review',
+        justification: `${selectedItems.join(',')}: ${justificationText}`,
+        lastUpdateDate: Date.now(),
+        score: (parseInt(score) / 100).toString(),
+        modelId,
+        scoringInstance,
+      };
+      dispatch(
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        setNewMasking(args)
+      );
+    }
+  };
+
+  const submitJustificationFn =
+    props.type === NOTIFICATION_TAB.VIEW ? justificationFn : noop;
 
   return (
     <Table size="small">
@@ -281,11 +386,19 @@ export default function NotificationDataTable<
             getComparator(orderDirection, orderField)
           ).map(([row, _], index) => rowRenderer(row, index, props.columns))}
       </TableBody>
-      <CustomJustification
-        open={isOpenJusDlg}
-        onClose={() => setOpenJusDlg(false)}
-        submitFn={noop}
-      />
+      {props.type === NOTIFICATION_TAB.VIEW && (
+        <CustomJustification
+          open={isOpenJusDlg}
+          onClose={() => {
+            setOpenJusDlg(false);
+            setModelId(null);
+            setScore(null);
+            setScoringInstance(null);
+            setEntityId(null);
+          }}
+          submitFn={submitJustificationFn}
+        />
+      )}
     </Table>
   );
 }

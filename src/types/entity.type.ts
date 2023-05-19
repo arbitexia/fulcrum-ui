@@ -47,6 +47,9 @@ export type Entity = {
   entityStatus: EntityStatus;
   scoringResult: ScoringResult;
   entityHistoricalRanking?: { [dateString: string]: HistoricalRanking };
+  isMasked?: boolean;
+  maskingStatus?: string;
+  icon?: string | null;
   unmaskToken: string;
 };
 

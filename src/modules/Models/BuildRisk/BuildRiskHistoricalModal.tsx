@@ -197,7 +197,11 @@ const BuildRiskHistoricalModal = ({
             </Box>
             <Box>
               <StyledText>{startingModelData?.count ?? 0}</StyledText>
-              <StyledText>{startingModelData?.uniquenessLimitExceeded != '' ? startingModelData?.uniquenessLimitExceeded : startingModelData?.countUnique ?? 0}</StyledText>
+              <StyledText>
+                {startingModelData?.uniquenessLimitExceeded != ''
+                  ? startingModelData?.uniquenessLimitExceeded
+                  : startingModelData?.countUnique ?? 0}
+              </StyledText>
               <StyledText>
                 {roundToSignificant(startingModelData?.mean ?? 0)}
               </StyledText>

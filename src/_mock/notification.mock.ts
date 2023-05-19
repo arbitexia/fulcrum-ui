@@ -7,39 +7,8 @@
  * Author: Ritesh Patel
  */
 
-import {
-  NotificationColumnType,
-  NotificationType,
-} from '@/types/notification.type';
-
-export const rows: NotificationType[] = [
-  {
-    id: '1',
-    status: 'New',
-    name: 'Unmask',
-    score: '44',
-    notificationType: 'Score Threshhold exceeded',
-    notificationName: 'Arres Severity (50)',
-    model: 'Combined Model',
-    category: 'All',
-    time: '12/15/2022 5:35 AM',
-    threshold: '50%',
-    isMasking: true,
-  },
-  {
-    id: '2',
-    status: 'Reviewed',
-    name: 'Jason Wang',
-    score: '25',
-    notificationType: 'Score Threshhold exceeded',
-    notificationName: 'Arres Severity (50)',
-    model: 'Data exfiltration',
-    category: 'All',
-    time: '12/15/2022 5:35 AM',
-    threshold: '50%',
-    isMasking: false,
-  },
-];
+import { NotificationColumnType } from '@/types/notification.type';
+import { UISelectInterface } from '@/types/common.type';
 
 export const viewColumns: NotificationColumnType[] = [
   { id: 'status', field: 'status', headerName: 'Status', sortable: true },
@@ -73,4 +42,18 @@ export const manageColumns: NotificationColumnType[] = [
     headerName: 'Type',
     sortable: true,
   },
+  {
+    id: 'active',
+    field: 'active',
+    headerName: 'Active',
+    sortable: false,
+  },
+];
+
+export const SCORE_THRESHOLD = 'SCORE_THRESHOLD';
+export const SIDELINE = 'SIDELINE';
+
+export const notificationTypes: UISelectInterface[] = [
+  { id: 'SCORE_THRESHOLD', name: 'Threshold Excedeed' },
+  { id: 'SIDELINE', name: 'Sideline' },
 ];

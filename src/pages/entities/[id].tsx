@@ -88,7 +88,9 @@ const Profile = (): ReactElement => {
     modelId: string;
     unmaskToken: string;
   };
-  const decodedUnmaskToken = queryUnmaskToken ? decodeURIComponent(queryUnmaskToken) : '';
+  const decodedUnmaskToken = queryUnmaskToken
+    ? decodeURIComponent(queryUnmaskToken)
+    : '';
   const [cookies] = useCookies(['accessToken']);
   const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
   const entity: Entity | null =
@@ -208,6 +210,7 @@ const Profile = (): ReactElement => {
     if (
       isReady &&
       !isEntitiesStatusInitialized &&
+      entitiesInitialized &&
       cookieAccessToken &&
       entityId
     ) {
@@ -217,6 +220,7 @@ const Profile = (): ReactElement => {
     }
   }, [
     isEntitiesStatusInitialized,
+    entitiesInitialized,
     dispatch,
     cookieAccessToken,
     entityId,
@@ -418,7 +422,7 @@ const Profile = (): ReactElement => {
     }
   };
 
-  if (!cookieAccessToken || !isReady) {
+  if (!cookieAccessToken || !isReady || !isEntitiesStatusInitialized) {
     return <LinearProgress />;
   }
 

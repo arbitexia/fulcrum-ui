@@ -37,6 +37,7 @@ import {
   EntityStatusLog,
   MaskingType,
 } from '@/types/governance.type';
+import { Notification, NotificationEvent } from '@/types/notification.type';
 
 export declare namespace ReduxJson {
   export type CommonReduxData<T> = {
@@ -167,6 +168,7 @@ export declare namespace ReduxJson {
     initialized: boolean;
     status: ResponseStatus | null;
     entities: { [id: string]: Entity };
+    entitiesPending: { [id: string]: boolean };
     isCommentsInitialized: boolean;
     isStatusInitialized: boolean;
     rankingByEntityId: { [id: string]: EntityRanking };
@@ -253,6 +255,24 @@ export declare namespace ReduxJson {
       loading: boolean;
       status: ResponseStatus | null;
       value: EntityStatusLog[];
+    };
+  };
+  export type NotificationState = {
+    notifications: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: { [notificationId: string]: Notification };
+    };
+    notificationEvents: {
+      initialized: boolean;
+      loading: boolean;
+      status: ResponseStatus | null;
+      value: {
+        [notificationId: string]: {
+          [entityId: string]: { [scoringInstance: number]: NotificationEvent };
+        };
+      };
     };
   };
 }

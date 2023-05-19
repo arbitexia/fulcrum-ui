@@ -67,12 +67,13 @@ const BuildModelNavbar = ({
     const modelId = (model && model?.id) ?? 'NEW';
     const newModel =
       modelId && modelId === 'NEW' ? { ...model, id: null } : model;
+    const author = (model && model.owner) ?? '';
     const modelJson = JSON.stringify(newModel);
     if (accessToken) {
       dispatchSave({
         accessToken,
         modelJson,
-        author: 'Diego Martinez',
+        author,
         modelId: modelId === 'NEW' ? '' : modelId,
         lastUpdateDate: Date.now(),
         active: true,
