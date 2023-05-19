@@ -21,7 +21,11 @@ export const sidebarMenus: SideBarMenu[] = [
     title: 'Discovery',
     display: false,
   },
-  { route: '/reports', imgPath: 'images/icons/chart.svg', title: 'Reports' },
+  {
+    route: '/reports/program',
+    imgPath: 'images/icons/chart.svg',
+    title: 'Reports',
+  },
   {
     route: '/configuration/model',
     imgPath: 'images/icons/models-configuration.svg',

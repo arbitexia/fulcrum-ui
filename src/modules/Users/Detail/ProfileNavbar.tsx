@@ -114,7 +114,7 @@ const UserDetailNavbar = ({
         <UIFlexEndBox>
           {entityId && configIsInitialized && (
             <UIFlexSpaceBox sx={{ gap: 1 }}>
-              <UIFlexEndBox>
+              <UIFlexCenterBox>
                 <StyledTypography>Status</StyledTypography>
                 <UISelectBox
                   id="demo-simple-select-helper"
@@ -151,7 +151,7 @@ const UserDetailNavbar = ({
                     );
                   })}
                 </UISelectBox>
-              </UIFlexEndBox>
+              </UIFlexCenterBox>
               <UIFlexCenterBox>
                 <StyledTypography>Sideline</StyledTypography>
                 <UIFlexCenterBox

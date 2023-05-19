@@ -45,6 +45,7 @@ export const UITabWrapper = ({
         '.MuiTabs-indicator': {
           backgroundColor: 'transparent',
         },
+        padding: '0 12px',
       }}
     >
       <Tabs
