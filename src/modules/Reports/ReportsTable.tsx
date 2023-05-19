@@ -138,7 +138,7 @@ export default function ReportsTable<
   const handleSearch = (property: string, value: string): void => {
     const filteredList = rows.filter((t) => {
       const attr = property as keyof U;
-      const str = t[attr] as unknown as string;
+      const str = t[attr] as string;
       return str
         .toString()
         .toLocaleLowerCase()
