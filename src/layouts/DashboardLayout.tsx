@@ -9,6 +9,7 @@
 import React, { ReactNode } from 'react';
 import { UIAppLayoutWrapper, UILayoutMain } from '@/components/UI';
 import { AppSEO, AppNavbar, AppSidebar } from '@/components/App';
+import { Box } from '@mui/material';
 
 interface Props {
   title: string;

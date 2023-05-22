@@ -65,7 +65,9 @@ const OrganizationTab = (): JSX.Element => {
         Total Risk Score Summary Statistics
       </Typography>
       <UIFlexCenterBox sx={{ my: 4 }}>
-        <ReportsBarChart chartData={chartDataTotalRiskScore} isTitle={true} />
+        <Box sx={{ border: 1, padding: 2 }}>
+          <ReportsBarChart chartData={chartDataTotalRiskScore} isTitle={true} />
+        </Box>
       </UIFlexCenterBox>
       <Typography sx={{ fontSize: '20px', fontWeight: 700 }}>
         Number of individuals per Risk Indicator
@@ -76,7 +78,9 @@ const OrganizationTab = (): JSX.Element => {
         order="name"
       />
       <UIFlexCenterBox sx={{ my: 4 }}>
-        <ReportsBarChart chartData={chartDataRiskIndicator} />
+        <Box sx={{ border: 1, padding: 2 }}>
+          <ReportsBarChart chartData={chartDataRiskIndicator} />
+        </Box>
       </UIFlexCenterBox>
     </Box>
   );

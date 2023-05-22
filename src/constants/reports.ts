@@ -95,19 +95,19 @@ export const personsPerList = {
       name: 'Job Title',
     },
     {
-      id: 1,
+      id: 2,
       name: 'Location',
     },
     {
-      id: 1,
+      id: 3,
       name: 'Business Unit',
     },
     {
-      id: 1,
+      id: 4,
       name: 'Clearance',
     },
     {
-      id: 1,
+      id: 5,
       name: 'Employee Status',
     },
   ],

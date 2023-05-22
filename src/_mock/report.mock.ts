@@ -57,10 +57,12 @@ export const organizationMetricsColumns: ReportsColumnType[] = [
   {
     id: 'percentPopulation',
     headerName: 'Percent of the Population',
+    align: 'center',
   },
   {
     id: 'numberOfIndividuals',
     headerName: 'Number Of Individuals',
+    align: 'center',
   },
   {
     id: 'trend',
@@ -105,10 +107,15 @@ const labelsTotalRiskScore = [
   '60',
   '65',
   '55',
+  '50',
   '45',
   '40',
+  '35',
   '30',
+  '25',
   '20',
+  '15',
+  '10',
   '5',
   '0',
 ];
@@ -116,8 +123,11 @@ export const chartDataTotalRiskScore = {
   labels: labelsTotalRiskScore,
   datasets: [
     {
-      data: [100, 200, 300, 400, 500],
-      backgroundColor: 'rgb(39 123 210)',
+      maxBarThickness: 20,
+      data: [
+        0, 1, 6, 26, 32, 31, 17, 6, 32, 252, 1480, 4876, 13463, 16415, 4663,
+      ],
+      backgroundColor: 'rgb(78,113,190)',
     },
   ],
 };
@@ -141,30 +151,26 @@ export const chartDataRiskIndicator = {
   labels: labelsRiskIndicator,
   datasets: [
     {
-      data: [100, 200, 300, 400, 500],
-      backgroundColor: 'rgb(39 123 210)',
+      maxBarThickness: 10,
+      data: [200, 225, 180, 250, 300, 298, 260, 300, 297, 295, 300, 312],
+      backgroundColor: 'rgb(78,113,190)',
     },
   ],
 };
 
 export const riskStatusChartData = {
   labels: [
-    'Lead Identified',
     'Case Open',
     'Corrective Action Taken',
     'Case closed - No Further Action',
     'Enhanced Monitoring',
+    'Lead Identified',
   ],
   datasets: [
     {
-      data: [12, 19, 3, 5, 2],
-      backgroundColor: [
-        'rgb(255, 99, 132)',
-        'rgb(54, 162, 235)',
-        'rgb(255, 206, 86)',
-        'rgb(75, 192, 192)',
-        'rgb(255, 159, 64)',
-      ],
+      // data: [ 56, 42, 20, 61,20],
+      data: [28, 21, 10, 31, 10],
+      backgroundColor: ['#FFC000', '#F57C2B', '#92D050', '#C00000', '#959595'],
     },
   ],
 };
@@ -174,23 +180,35 @@ export const statusOverTimeChartData = {
   labels: statusOverTimeLabels,
   datasets: [
     {
-      data: [0, 2, 5, 8],
-      backgroundColor: 'rgb(255, 99, 132)',
+      maxBarThickness: 50,
+      data: [1, 3, 2, 2],
+      backgroundColor: 'rgb(254, 192, 0)',
     },
     {
-      data: [2, 2, 5, 12],
-      backgroundColor: 'rgb(75, 192, 192)',
+      maxBarThickness: 50,
+      data: [1, 4, 1, 0],
+      backgroundColor: 'rgb(236, 125, 49)',
     },
     {
-      data: [4, 2, 5, 10],
-      backgroundColor: 'rgb(53, 162, 235)',
+      maxBarThickness: 50,
+      data: [0, 2, 0, 1],
+      backgroundColor: 'rgb(146, 209, 80)',
+    },
+    {
+      maxBarThickness: 50,
+      data: [0, 0, 4, 5],
+      backgroundColor: 'rgb(193, 3, 0)',
+    },
+    {
+      maxBarThickness: 50,
+      data: [0, 0, 0, 3],
+      backgroundColor: 'rgb(166, 166, 166)',
     },
   ],
 };
 
-export const PersonsPerChartData = {
+export const personsPerChartData = {
   labels: [
-    'Sales',
     'Business Development',
     'Corporate Strategy',
     'Customer Service',
@@ -199,21 +217,32 @@ export const PersonsPerChartData = {
     'IT Support Staff',
     'Marketing',
     'Operations',
+    'Sales',
   ],
   datasets: [
     {
-      data: [12, 19, 3, 5, 2, 1, 15, 6, 8],
+      data: [4, 12, 12, 4, 4, 24, 16, 16, 8],
       backgroundColor: [
-        'rgb(255, 99, 132)',
-        'rgb(54, 162, 235)',
-        'rgb(255, 206, 86)',
-        'rgb(75, 192, 192)',
-        'rgb(255, 159, 64)',
-        'rgb(25, 88, 100)',
-        'rgb(56, 206, 2)',
-        'rgb(78, 88, 22)',
-        'rgb(90, 5, 2)',
+        'rgb(97, 160, 219)',
+        'rgb(247,127, 41)',
+        'rgb(165, 165, 165)',
+        'rgb(252, 196, 0)',
+        'rgb(55, 106, 195)',
+        'rgb(107, 172,62)',
+        'rgb(32, 93, 151)',
+        'rgb(165, 71, 7)',
+        'rgb(105,105, 105)',
       ],
     },
   ],
 };
+
+export const riskScoreHover = [
+  { name: 'Mean', score: 5.7 },
+  { name: 'Median', score: 4.8 },
+  { name: 'Standard Deviation', score: 5.1 },
+  { name: 'Skewness', score: 2.2 },
+  { name: 'Minimum', score: 0.0 },
+  { name: 'Maximum', score: 61.6 },
+  { name: 'Total Persons', score: 41300 },
+];

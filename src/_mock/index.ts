@@ -60,5 +60,6 @@ export {
   chartDataRiskIndicator,
   riskStatusChartData,
   statusOverTimeChartData,
-  PersonsPerChartData,
+  personsPerChartData,
+  riskScoreHover,
 } from './report.mock';

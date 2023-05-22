@@ -12,6 +12,7 @@ export type ReportsColumnType = {
   props?: { [id: string]: string };
   variant?: string;
   sortable?: boolean;
+  align?: string;
 };
 
 export type ProgramTableType = {

@@ -137,7 +137,7 @@ export default function ReportsTable<
       <TableHead>
         <TableRow>
           {columns.map((c: T, index: number) => (
-            <UINoBorderCell key={index}>
+            <UINoBorderCell key={index} sx={{ textAlign: c?.align ?? 'left' }}>
               {c.sortable ? (
                 <React.Fragment>
                   <TableSortLabel
@@ -175,7 +175,10 @@ export default function ReportsTable<
                     // @ts-ignore
                     if (row[propertyId] === 'up') {
                       return (
-                        <UIBorderCell key={`reports-${index}-${propertyId}`}>
+                        <UIBorderCell
+                          key={`reports-${index}-${propertyId}`}
+                          sx={{ textAlign: property?.align ?? 'left' }}
+                        >
                           <Box width="12px">
                             <UIVerticalArrow direction={0} color={'#a50000'} />
                           </Box>
@@ -183,7 +186,10 @@ export default function ReportsTable<
                       );
                     } else {
                       return (
-                        <UIBorderCell key={`reports-${index}-${propertyId}`}>
+                        <UIBorderCell
+                          key={`reports-${index}-${propertyId}`}
+                          sx={{ textAlign: property?.align ?? 'left' }}
+                        >
                           {
                             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                             // @ts-ignore
