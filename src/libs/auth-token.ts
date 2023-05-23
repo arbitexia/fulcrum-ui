@@ -7,10 +7,6 @@
  * Author: Ritesh Patel
  */
 import { authApi } from '@/redux/apis';
-<<<<<<< HEAD
-import { readCookie, writeCookie } from './cookies';
-=======
->>>>>>> main
 import jwt_decode, { JwtPayload } from 'jwt-decode';
 import { AccessTokenType } from '@/types';
 
