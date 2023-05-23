@@ -7,13 +7,38 @@
  * Author: Ritesh Patel
  */
 import { authApi } from '@/redux/apis';
-import { read_cookie, write_cookie } from './cookies';
 import jwt_decode, { JwtPayload } from 'jwt-decode';
 import { AccessTokenType } from '@/types';
 
+const writeCookie = (
+  name: string,
+  value: string,
+  date: Date | string | null
+): void => {
+  if (typeof window === 'undefined') return;
+  const expirey = date instanceof Date ? '; expires=' + date : null;
+  const cookie = [
+    name,
+    '=',
+    JSON.stringify(value),
+    '; domain_.',
+    window.location.host.toString(),
+    '; path=/;',
+    expirey,
+  ].join('');
+  document.cookie = cookie;
+};
+
+const readCookie = (name: string): string | string[] | null => {
+  let result: RegExpMatchArray | string | string[] | null =
+    document.cookie.match(new RegExp(name + '=([^;]+)'));
+  result = result != undefined ? result[1] : [];
+  return result;
+};
+
 export const checkAuthToken = async (): Promise<AccessTokenType> => {
-  const accessToken = read_cookie('accessToken');
-  const refreshToken = read_cookie('refreshToken');
+  const accessToken = readCookie('accessToken');
+  const refreshToken = readCookie('refreshToken');
 
   try {
     const decoded: JwtPayload = jwt_decode(accessToken as string);
@@ -27,8 +52,8 @@ export const checkAuthToken = async (): Promise<AccessTokenType> => {
       });
 
       if (result) {
-        write_cookie('accessToken', result?.accessToken ?? '', new Date());
-        write_cookie('refreshToken', result?.refreshToken ?? '', new Date());
+        writeCookie('accessToken', result?.accessToken ?? '', new Date());
+        writeCookie('refreshToken', result?.refreshToken ?? '', new Date());
         return result;
       } else {
         return {
