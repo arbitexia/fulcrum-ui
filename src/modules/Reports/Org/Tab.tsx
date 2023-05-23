@@ -7,7 +7,7 @@
  * Author: Ritesh Patel
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { UIFlexCenterBox, UISelect } from '@/components/UI';
 import { UIFlexEndBox } from '@/components/UI/Box';
@@ -19,45 +19,32 @@ import {
   organizationTableData,
   populationList,
 } from '@/_mock';
-import ReportsTable from './ReportsTable';
-import { ReportsBarChart } from './Detail/BarChart';
+import ReportsTable from '../ReportsTable';
+import { ReportsBarChart } from './BarChart';
 
 const OrganizationTab = (): JSX.Element => {
-  const labels = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-  ];
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label: 'Dataset 1',
-        data: [100, 200, 300, 400, 500],
-        backgroundColor: 'rgb(39 123 210)',
-      },
-    ],
-  };
+  const [modelName, setModelName] = useState<number>();
+  const [population, setPopulation] = useState<number>();
 
   return (
     <Box>
       <UIFlexEndBox sx={{ gap: 4, mt: 2 }}>
         <UISelect
-          value={1}
+          value={modelName ?? modelList.items[0].id}
+          defaultValue={modelList.items[0].id}
           itemList={modelList.items}
           label={modelList.label}
           handleChange={(event) => {
-            // handleChange(event, 'changePopulation');
+            setModelName(event.target.value as number);
           }}
         />
         <UISelect
-          value={1}
+          value={population ?? populationList.items[0].id}
+          defaultValue={populationList.items[0].id}
           itemList={populationList.items}
-          handleChange={(event) => {}}
+          handleChange={(event) => {
+            setPopulation(event.target.value as number);
+          }}
           label={populationList.label}
         />
       </UIFlexEndBox>

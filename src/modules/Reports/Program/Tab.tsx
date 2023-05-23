@@ -22,10 +22,10 @@ import dayjs, { Dayjs } from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker, DatePickerProps } from '@mui/x-date-pickers/DatePicker';
-import PieChart from './Detail/PieChart';
-import StackedBarChart from './Detail/StackedBarChart';
+import PieChart from './PieChart';
+import StackedBarChart from './StackedBarChart';
 import { StatusDict, getStatusColor } from '@/libs/color-generator';
-import ReportsTable from './ReportsTable';
+import ReportsTable from '../ReportsTable';
 import { UIFlexEndBox } from '@/components/UI/Box';
 import { appImageLoader } from '@/libs/image-loader';
 import {
@@ -51,12 +51,10 @@ interface ButtonFieldProps
 }
 
 const ProgramTab = (): JSX.Element => {
-  const [startValue, setStartValue] = React.useState<Dayjs | null>(
-    dayjs('2022-04-17')
-  );
-  const [endValue, setEndValue] = React.useState<Dayjs | null>(
-    dayjs('2022-04-17')
-  );
+  const [startValue, setStartValue] = useState<Dayjs | null>(dayjs(new Date()));
+  const [endValue, setEndValue] = useState<Dayjs | null>(dayjs(new Date()));
+  const [totalStatusValue, setTotalStatusValue] = useState<string>();
+  const [personValue, setPersonValue] = useState<number>();
 
   const ButtonField = (props: ButtonFieldProps) => {
     const {
@@ -108,7 +106,7 @@ const ProgramTab = (): JSX.Element => {
           Time Filter
         </Typography>
       </UIFlexWrapBox>
-      <UIFlexWrapBox sx={{ mt: 2 }}>
+      <UIFlexWrapBox sx={{ mt: 2, gap: 2 }}>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <ButtonDatePicker
             label={`${
@@ -117,7 +115,6 @@ const ProgramTab = (): JSX.Element => {
             value={startValue}
             onChange={(newValue) => setStartValue(newValue)}
           />
-          <Typography sx={{ mt: 1 }}> - </Typography>
           <ButtonDatePicker
             label={`${
               endValue == null ? 'null' : endValue.format('MM/DD/YYYY')
@@ -158,9 +155,11 @@ const ProgramTab = (): JSX.Element => {
             <UISelectBox
               id="demo-simple-select-helper"
               defaultValue={totalStatus.default}
-              // value={totalStatus ?? totalStatus[0].label}
+              value={totalStatusValue ?? totalStatus.default}
               label="status"
-              onChange={() => {}}
+              onChange={(event) => {
+                setTotalStatusValue(event.target.value as string);
+              }}
               width="210px"
               MenuProps={{
                 PaperProps: {
@@ -202,10 +201,11 @@ const ProgramTab = (): JSX.Element => {
               Persons per
             </Typography>
             <UISelect
-              value={1}
+              defaultValue={personsPerList.items[0].id}
+              value={personValue ?? personsPerList.items[0].id}
               itemList={personsPerList.items}
               handleChange={(event) => {
-                // handleChange(event, 'changePopulation');
+                setPersonValue(event.target.value as number);
               }}
             />
           </UIFlexCenterBox>
@@ -218,12 +218,7 @@ const ProgramTab = (): JSX.Element => {
       </UIFlexCenterBox>
       <Box sx={{ my: 8 }}>
         <UIFlexEndBox sx={{ mb: 2 }}>
-          <IconButton
-            onClick={() => {
-              const uuid = new Date().getTime();
-              // dispatchDownloadExcel({ userId: '1', uuid: uuid.toString() });
-            }}
-          >
+          <IconButton>
             <Image
               src={'images/icons/xls.svg'}
               loader={appImageLoader}

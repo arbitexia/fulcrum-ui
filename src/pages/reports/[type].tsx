@@ -9,7 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/layouts';
 import { UIContainer, UITabWrapper } from '@/components/UI';
-import { ReportsNavBar, ReportsTabs } from '@/modules/Reports';
+import { OrganizationTab, ProgramTab, ReportsNavBar } from '@/modules/Reports';
 import { useTheme } from '@mui/system';
 import { Tab } from '@mui/material';
 import { useRouter } from 'next/router';
@@ -83,7 +83,8 @@ const ReportsPage = (): JSX.Element => {
       <UIContainer
         sx={{ background: '#FFFFFF', position: 'relative', top: '-16px' }}
       >
-        <ReportsTabs url={activeTab} />
+        {activeTab === 'program-metrics' && <ProgramTab />}
+        {activeTab === 'organization-metrics' && <OrganizationTab />}
       </UIContainer>
     </DashboardLayout>
   );

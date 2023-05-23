@@ -115,4 +115,11 @@ export type {
   ReportsColumnType,
   ProgramTableType,
   OrganizationTableType,
-} from './reports.type';
+  RetrieveProgramParams,
+  RetrievePersonParams,
+  RetrieveOrgParams,
+  RiskStatusSummaryType,
+  StatusOvertimeType,
+  PersonPerType,
+  IndividualsRiskIndicatorType,
+} from './report.type';

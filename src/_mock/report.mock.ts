@@ -168,7 +168,6 @@ export const riskStatusChartData = {
   ],
   datasets: [
     {
-      // data: [ 56, 42, 20, 61,20],
       data: [28, 21, 10, 31, 10],
       backgroundColor: ['#FFC000', '#F57C2B', '#92D050', '#C00000', '#959595'],
     },

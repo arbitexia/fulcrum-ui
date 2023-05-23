@@ -38,6 +38,7 @@ import {
   MaskingType,
 } from '@/types/governance.type';
 import { Notification, NotificationEvent } from '@/types/notification.type';
+import { RiskStatusSummaryType } from './report.type';
 
 export declare namespace ReduxJson {
   export type CommonReduxData<T> = {
@@ -274,5 +275,12 @@ export declare namespace ReduxJson {
         };
       };
     };
+  };
+
+  export type ReportsState = {
+    loading: boolean;
+    initialized: boolean;
+    status: ResponseStatus | null;
+    riskStatusSummary: RiskStatusSummaryType[] | null;
   };
 }
