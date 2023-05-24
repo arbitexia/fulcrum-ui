@@ -42,6 +42,7 @@ import {
   riskReducer,
   governanceReducer,
   notificationsReducer,
+  reportReducer,
 } from './slices';
 import { WebStorage } from 'redux-persist/es/types';
 
@@ -62,6 +63,7 @@ const combinedReducer = combineReducers<{
   risks: ReduxJson.RiskState;
   governance: ReduxJson.GovernanceState;
   notifications: ReduxJson.NotificationState;
+  reports: ReduxJson.ReportState;
 }>({
   app: appReducer,
   users: userReducer,
@@ -79,6 +81,7 @@ const combinedReducer = combineReducers<{
   risks: riskReducer,
   governance: governanceReducer,
   notifications: notificationsReducer,
+  reports: reportReducer,
 });
 
 const createStore = (): Store => {

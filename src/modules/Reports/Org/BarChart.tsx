@@ -22,6 +22,7 @@ import {
 import { barChartNoTitleOptions, barChartWithTitleOptions } from '@/constants';
 import { UIFlexSpaceBox } from '@/components/UI';
 import { riskScoreHover } from '@/_mock';
+import { useTheme } from '@mui/system';
 
 ChartJS.register(
   CategoryScale,
@@ -41,17 +42,31 @@ export const ReportsBarChart: FC<ReportsBarChartProps> = ({
   isTitle,
 }) => {
   const [isHover, setHover] = useState<boolean>(false);
+  const theme = useTheme();
   return (
     <Box
-      sx={{ width: `1000px`, position: 'relative' }}
+      sx={{
+        width: `1000px`,
+        position: 'relative',
+        [theme.breakpoints.up('xl')]: {
+          width: '1200px',
+        },
+        [theme.breakpoints.up('lg')]: {
+          width: '1017px',
+        },
+        [theme.breakpoints.up('md')]: {
+          width: '800px',
+        },
+        [theme.breakpoints.up('sm')]: {
+          width: '540px',
+        },
+      }}
       onMouseOver={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
       <Bar
         options={isTitle ? barChartWithTitleOptions : barChartNoTitleOptions}
         data={chartData}
-        width={1000}
-        height={600}
       />
       {isHover && isTitle && (
         <Box

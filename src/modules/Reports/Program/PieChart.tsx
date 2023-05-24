@@ -45,15 +45,13 @@ const PieChart: FC<PieChartProps> = ({ chartData }) => {
   };
 
   return (
-    <Box>
-      <Pie
-        width={540}
-        height={540}
-        data={chartData}
-        options={chartOptions}
-        ref={chartRef}
-      />
-    </Box>
+    <Pie
+      width={520}
+      height={420}
+      data={chartData}
+      options={chartOptions}
+      ref={chartRef}
+    />
   );
 };
 

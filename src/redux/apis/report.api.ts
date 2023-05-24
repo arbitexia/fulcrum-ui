@@ -22,19 +22,19 @@ import {
 } from '@/types/report.type';
 import axios from 'axios';
 
-const baseRiskUrl: string = config.URLS.RISK || '';
+const baseReportUrl: string = config.URLS.REPORT_URL || '';
 
 const headers = {
-  'Access-Control-Allow-Origin': baseRiskUrl,
+  'Access-Control-Allow-Origin': baseReportUrl,
   'Access-Control-Allow-Methods':
-    config.ACCESS_CONTROL_ALLOWED_METHODS.RISK.join(','),
+    config.ACCESS_CONTROL_ALLOWED_METHODS.REPORT.join(','),
 };
 
 export const loadRiskStatusSummary = async (
   params: RetrieveProgramParams
 ): Promise<RiskStatusSummaryType[]> => {
   const response = await axios.post<RiskStatusSummaryType[]>(
-    `${baseRiskUrl}/api/reports/program/risk-status`,
+    `${baseReportUrl}/api/reports/program/risk-status`,
     params,
     { headers }
   );
@@ -45,7 +45,7 @@ export const loadStatusOverTime = async (
   params: RetrieveProgramParams
 ): Promise<StatusOvertimeType[]> => {
   const response = await axios.post<StatusOvertimeType[]>(
-    `${baseRiskUrl}/api/reports/program/status-overtime`,
+    `${baseReportUrl}/api/reports/program/status-overtime`,
     params,
     { headers }
   );
@@ -56,7 +56,7 @@ export const loadPersonPer = async (
   params: RetrievePersonParams
 ): Promise<PersonPerType[]> => {
   const response = await axios.post<PersonPerType[]>(
-    `${baseRiskUrl}/api/reports/program/persons`,
+    `${baseReportUrl}/api/reports/program/persons`,
     params,
     { headers }
   );
@@ -67,7 +67,7 @@ export const loadProgramData = async (
   params: RetrieveProgramParams
 ): Promise<ProgramTableType[]> => {
   const response = await axios.post<ProgramTableType[]>(
-    `${baseRiskUrl}/api/reports/program/list`,
+    `${baseReportUrl}/api/reports/program/list`,
     params,
     { headers }
   );
@@ -78,7 +78,7 @@ export const loadRiskScoreSummary = async (
   params: RetrieveOrgParams
 ): Promise<RiskScoreSummaryType[]> => {
   const response = await axios.post<RiskScoreSummaryType[]>(
-    `${baseRiskUrl}/api/reports/organization/risk-score`,
+    `${baseReportUrl}/api/reports/organization/risk-score`,
     params,
     { headers }
   );
@@ -89,7 +89,7 @@ export const loadOrgRiskIndicator = async (
   params: RetrieveOrgParams
 ): Promise<IndividualsRiskIndicatorType[]> => {
   const response = await axios.post<IndividualsRiskIndicatorType[]>(
-    `${baseRiskUrl}/api/reports/organization/risk-indicator`,
+    `${baseReportUrl}/api/reports/organization/risk-indicator`,
     params,
     { headers }
   );
@@ -100,7 +100,7 @@ export const loadOrganizationData = async (
   params: RetrieveOrgParams
 ): Promise<OrganizationTableType[]> => {
   const response = await axios.post<OrganizationTableType[]>(
-    `${baseRiskUrl}/api/reports/program/list`,
+    `${baseReportUrl}/api/reports/organization/list`,
     params,
     { headers }
   );

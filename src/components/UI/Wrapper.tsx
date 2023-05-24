@@ -8,6 +8,8 @@
  */
 import React from 'react';
 import { styled, Box, Tabs, BoxProps } from '@mui/material';
+import { Theme } from '@emotion/react';
+import { SxProps } from '@mui/system';
 
 export const UIAppLayoutWrapper = styled(Box)({
   width: '100%',
@@ -19,6 +21,7 @@ interface UITabWrapperProps extends BoxProps {
   children: React.ReactNode | React.ReactNode[];
   value: number;
   noBorder?: boolean;
+  sx?: SxProps<Theme> | undefined;
   onChange: (event: React.SyntheticEvent, newValue?: number) => void;
 }
 
@@ -27,6 +30,7 @@ export const UITabWrapper = ({
   value,
   noBorder,
   onChange,
+  sx,
   ...rest
 }: UITabWrapperProps): JSX.Element => {
   return (
@@ -46,6 +50,7 @@ export const UITabWrapper = ({
           backgroundColor: 'transparent',
         },
         padding: '0 12px',
+        ...sx,
       }}
     >
       <Tabs

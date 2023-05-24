@@ -11,16 +11,39 @@ import { DashboardLayout } from '@/layouts';
 import { UIContainer, UITabWrapper } from '@/components/UI';
 import { OrganizationTab, ProgramTab, ReportsNavBar } from '@/modules/Reports';
 import { useTheme } from '@mui/system';
-import { Tab } from '@mui/material';
+import { Tab, LinearProgress, Box } from '@mui/material';
 import { useRouter } from 'next/router';
 import { noop } from 'lodash';
 import { reportsTabData } from '@/constants';
+import { useCookies } from 'react-cookie';
+import { AccessTokenType } from '@/types';
+import config from '@/config';
 
+const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 const ReportsPage = (): JSX.Element => {
   const theme = useTheme();
   const router = useRouter();
   const { type: activeTab } = router.query as { type: string };
   const [value, setValue] = useState<number>(0);
+
+  const [cookies] = useCookies(['accessToken']);
+  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
+  const { isReady } = router as {
+    query: { type?: string };
+    isReady: boolean;
+  };
+
+  useEffect(() => {
+    if (isReady) {
+      if (!cookieAccessToken) {
+        router
+          .push(
+            `${baseAuthenticationUrl}/login/${config.AUTHENTICATION_SERVICE}`
+          )
+          .then(noop);
+      }
+    }
+  }, [isReady, cookieAccessToken, router]);
 
   useEffect(() => {
     const tabIndexElement = reportsTabData.find(
@@ -35,6 +58,11 @@ const ReportsPage = (): JSX.Element => {
   const handleTabChange = (val: string): void => {
     router.push(`/reports/${val}`).then(noop);
   };
+
+  if (!cookieAccessToken) {
+    return <LinearProgress />;
+  }
+
   return (
     <DashboardLayout
       title="Reports"
@@ -55,6 +83,7 @@ const ReportsPage = (): JSX.Element => {
           onChange={(_, newValue?: number) => setValue(newValue ? newValue : 0)}
           value={value}
           noBorder={true}
+          sx={{ padding: '0 38px' }}
         >
           {reportsTabData?.map(({ label, url }, index) => (
             <Tab
@@ -79,12 +108,14 @@ const ReportsPage = (): JSX.Element => {
             />
           ))}
         </UITabWrapper>
-      </UIContainer>
-      <UIContainer
-        sx={{ background: '#FFFFFF', position: 'relative', top: '-16px' }}
-      >
-        {activeTab === 'program-metrics' && <ProgramTab />}
-        {activeTab === 'organization-metrics' && <OrganizationTab />}
+        <Box sx={{ background: '#FFFFFF' }}>
+          {activeTab === 'program-metrics' && (
+            <ProgramTab accessToken={cookieAccessToken} />
+          )}
+          {activeTab === 'organization-metrics' && (
+            <OrganizationTab accessToken={cookieAccessToken} />
+          )}
+        </Box>
       </UIContainer>
     </DashboardLayout>
   );

@@ -66,15 +66,13 @@ const StackedBarChart: FC<StackedBarChartProps> = ({ chartData }) => {
   };
 
   return (
-    <Box>
-      <Bar
-        width={540}
-        height={540}
-        data={chartData}
-        options={chartOptions}
-        ref={chartRef}
-      />
-    </Box>
+    <Bar
+      width={670}
+      height={420}
+      data={chartData}
+      options={chartOptions}
+      ref={chartRef}
+    />
   );
 };
 

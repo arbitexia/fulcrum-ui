@@ -338,3 +338,21 @@ export {
   getNotificationEventsEntityIds,
   getNotificationEventsCount,
 } from './notification.slice';
+
+export {
+  default as reportReducer,
+  retrieveRiskStatusSummary,
+  retrieveStatusOverTime,
+  retrievePersonsPer,
+  retrieveProgramsData,
+  retrieveRiskScoreSummary,
+  retrieveIndividualsRiskIndicator,
+  retrieveOrganizationData,
+  riskStatusSummarySelector,
+  statusOverTimeSelector,
+  personPerSelector,
+  programListSelector,
+  riskScoreSummarySelector,
+  individualsRiskIndicatorSelector,
+  organizationListSelector,
+} from './report.slice';

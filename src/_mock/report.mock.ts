@@ -6,69 +6,7 @@
 /**
  * Author: Ritesh Patel
  */
-import {
-  OrganizationTableType,
-  ProgramTableType,
-  ReportsColumnType,
-} from '@/types';
-
-export const programMetricsColumns: ReportsColumnType[] = [
-  {
-    id: 'status',
-    headerName: 'Individual Status Change',
-  },
-  {
-    id: 'date',
-    headerName: 'Date/Time',
-    sortable: true,
-  },
-  {
-    id: 'analyst',
-    headerName: 'Analyst',
-  },
-  {
-    id: 'name',
-    headerName: 'Name',
-  },
-  {
-    id: 'eid',
-    headerName: 'EID',
-  },
-  {
-    id: 'title',
-    headerName: 'Title',
-  },
-  {
-    id: 'businessArea',
-    headerName: 'Business Area',
-  },
-];
-
-export const organizationMetricsColumns: ReportsColumnType[] = [
-  {
-    id: 'name',
-    headerName: 'Name',
-  },
-  {
-    id: 'category',
-    headerName: 'Category',
-    sortable: true,
-  },
-  {
-    id: 'percentPopulation',
-    headerName: 'Percent of the Population',
-    align: 'center',
-  },
-  {
-    id: 'numberOfIndividuals',
-    headerName: 'Number Of Individuals',
-    align: 'center',
-  },
-  {
-    id: 'trend',
-    headerName: '1 yr Trend',
-  },
-];
+import { OrganizationTableType, ProgramTableType } from '@/types';
 
 export const programTableData: ProgramTableType[] = [
   {

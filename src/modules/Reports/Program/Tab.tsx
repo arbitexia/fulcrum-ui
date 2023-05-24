@@ -7,7 +7,7 @@
  * Author: Ritesh Patel
  */
 
-import React, { useState } from 'react';
+import React, { FC, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Box, Typography, Chip, IconButton, Button } from '@mui/material';
 import {
@@ -26,15 +26,8 @@ import PieChart from './PieChart';
 import StackedBarChart from './StackedBarChart';
 import { StatusDict, getStatusColor } from '@/libs/color-generator';
 import ReportsTable from '../ReportsTable';
-import { UIFlexEndBox } from '@/components/UI/Box';
+import { UIFlexEndBox, UIFlexSpaceBox } from '@/components/UI/Box';
 import { appImageLoader } from '@/libs/image-loader';
-import {
-  personsPerChartData,
-  programMetricsColumns,
-  programTableData,
-  riskStatusChartData,
-  statusOverTimeChartData,
-} from '@/_mock';
 import { personsPerList, totalStatus } from '@/constants';
 
 import {
@@ -43,18 +36,142 @@ import {
   FieldSection,
 } from '@mui/x-date-pickers/models';
 import { UseDateFieldProps } from '@mui/x-date-pickers/DateField';
+import { useAppDispatch, useAppSelector } from '@/hooks';
+import {
+  personPerSelector,
+  programListSelector,
+  retrievePersonsPer,
+  retrieveProgramsData,
+  retrieveRiskStatusSummary,
+  retrieveStatusOverTime,
+  riskStatusSummarySelector,
+  statusOverTimeSelector,
+} from '@/redux/slices';
+import { ReportsColumnType } from '@/types';
+import { ChartData } from 'chart.js';
 
 interface ButtonFieldProps
   extends UseDateFieldProps<Dayjs>,
     BaseSingleInputFieldProps<Dayjs | null, FieldSection, DateValidationError> {
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }
+type ProgramTabProps = {
+  accessToken: string;
+};
+const ProgramTab: FC<ProgramTabProps> = ({ accessToken }): JSX.Element => {
+  const dispatch = useAppDispatch();
+  const riskStatusSummary = useAppSelector(riskStatusSummarySelector);
+  const statusOverTime = useAppSelector(statusOverTimeSelector);
+  const personsPer = useAppSelector(personPerSelector);
+  const programList = useAppSelector(programListSelector);
 
-const ProgramTab = (): JSX.Element => {
   const [startValue, setStartValue] = useState<Dayjs | null>(dayjs(new Date()));
   const [endValue, setEndValue] = useState<Dayjs | null>(dayjs(new Date()));
   const [totalStatusValue, setTotalStatusValue] = useState<string>();
   const [personValue, setPersonValue] = useState<number>();
+  const [riskStatusChartData, setRiskStatusChartData] =
+    useState<ChartData<'pie'>>();
+  const [statusOverTimeChartData, setStatusOverTimeChartData] =
+    useState<ChartData<'bar'>>();
+  const [personsPerChartData, setPersonsPerChartData] =
+    useState<ChartData<'pie'>>();
+
+  useEffect(() => {
+    if (!riskStatusSummary) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      dispatch(retrieveRiskStatusSummary({ accessToken }));
+    } else {
+      const labels: string[] = [];
+      const dataValue: number[] = [];
+      const backgroundColor = [
+        '#FFC000',
+        '#F57C2B',
+        '#92D050',
+        '#C00000',
+        '#959595',
+      ];
+      riskStatusSummary.map((obj) => {
+        labels.push(obj.status);
+        dataValue.push(obj?.value ?? 0);
+      });
+      setRiskStatusChartData({
+        labels,
+        datasets: [{ data: dataValue, backgroundColor }],
+      });
+    }
+  }, [dispatch, riskStatusSummary]);
+
+  useEffect(() => {
+    if (!statusOverTime) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      dispatch(retrieveStatusOverTime({ accessToken }));
+    } else {
+      const labels: string[] = statusOverTime.map((obj) => obj.label);
+      const datasets: {
+        maxBarThickness: number;
+        data: number[];
+        backgroundColor: string;
+      }[] = statusOverTime[0].values.map((_, index) => {
+        return {
+          maxBarThickness: 50,
+          data: statusOverTime.map((item) => item.values[index]),
+          backgroundColor: getBackgroundColor(index),
+        };
+      });
+      setStatusOverTimeChartData({ labels, datasets });
+    }
+  }, [dispatch, statusOverTime]);
+
+  const getBackgroundColor = (index: number) => {
+    const colors = [
+      'rgb(254, 192, 0)',
+      'rgb(236, 125, 49)',
+      'rgb(146, 209, 80)',
+      'rgb(193, 3, 0)',
+      'rgb(166, 166, 166)',
+    ];
+    return colors[index] || '';
+  };
+
+  useEffect(() => {
+    if (!personsPer) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      dispatch(retrievePersonsPer({ accessToken }));
+    } else {
+      const labels: string[] = [];
+      const dataValue: number[] = [];
+      const backgroundColor = [
+        'rgb(97, 160, 219)',
+        'rgb(247,127, 41)',
+        'rgb(165, 165, 165)',
+        'rgb(252, 196, 0)',
+        'rgb(55, 106, 195)',
+        'rgb(107, 172,62)',
+        'rgb(32, 93, 151)',
+        'rgb(165, 71, 7)',
+        'rgb(105,105, 105)',
+      ];
+      personsPer.map((obj) => {
+        labels.push(obj.status);
+        dataValue.push(obj?.value ?? 0);
+      });
+      setPersonsPerChartData({
+        labels,
+        datasets: [{ data: dataValue, backgroundColor }],
+      });
+    }
+  }, [dispatch, personsPer]);
+
+  useEffect(() => {
+    if (!programList) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      dispatch(retrieveProgramsData({ accessToken }));
+    }
+  }, [dispatch, programList]);
 
   const ButtonField = (props: ButtonFieldProps) => {
     const {
@@ -99,8 +216,40 @@ const ProgramTab = (): JSX.Element => {
       />
     );
   };
+
+  const programMetricsColumns: ReportsColumnType[] = [
+    {
+      id: 'status',
+      headerName: 'Individual Status Change',
+    },
+    {
+      id: 'date',
+      headerName: 'Date/Time',
+      sortable: true,
+    },
+    {
+      id: 'analyst',
+      headerName: 'Analyst',
+    },
+    {
+      id: 'name',
+      headerName: 'Name',
+    },
+    {
+      id: 'eid',
+      headerName: 'EID',
+    },
+    {
+      id: 'title',
+      headerName: 'Title',
+    },
+    {
+      id: 'businessArea',
+      headerName: 'Business Area',
+    },
+  ];
   return (
-    <Box sx={{ padding: '1rem 0' }}>
+    <Box sx={{ padding: '24px 38px' }}>
       <UIFlexWrapBox sx={{ gap: 2, alignItems: 'center' }}>
         <Typography sx={{ fontSize: '14px', color: '#7C909B' }}>
           Time Filter
@@ -125,26 +274,31 @@ const ProgramTab = (): JSX.Element => {
         </LocalizationProvider>
       </UIFlexWrapBox>
 
-      <UIFlexWrapBox sx={{ mt: 4, flexWrap: 'nowrap' }}>
-        <UIFlexColumnBox sx={{ width: '100%' }}>
-          <Typography sx={{ fontSize: '20px', fontWeight: 700 }}>
-            Risk Status Summary
-          </Typography>
-          <Box sx={{ border: 1, padding: 2 }}>
-            <PieChart chartData={riskStatusChartData} />
-          </Box>
-        </UIFlexColumnBox>
-        <UIFlexColumnBox sx={{ width: '100%' }}>
-          <Typography
-            sx={{ fontSize: '20px', fontWeight: 700, textAlign: 'center' }}
-          >
-            Status over Time
-          </Typography>
-          <Box sx={{ border: 1, padding: 2 }}>
-            <StackedBarChart chartData={statusOverTimeChartData} />
-          </Box>
-        </UIFlexColumnBox>
-      </UIFlexWrapBox>
+      <UIFlexSpaceBox sx={{ mt: 4 }}>
+        {riskStatusChartData && (
+          <UIFlexColumnBox>
+            <Typography sx={{ fontSize: '20px', fontWeight: 700 }}>
+              Risk Status Summary
+            </Typography>
+            <Box sx={{ border: 1, padding: 2 }}>
+              <PieChart chartData={riskStatusChartData} />
+            </Box>
+          </UIFlexColumnBox>
+        )}
+
+        {statusOverTimeChartData && (
+          <UIFlexColumnBox>
+            <Typography
+              sx={{ fontSize: '20px', fontWeight: 700, textAlign: 'center' }}
+            >
+              Status over Time
+            </Typography>
+            <Box sx={{ border: 1, padding: 2 }}>
+              <StackedBarChart chartData={statusOverTimeChartData} />
+            </Box>
+          </UIFlexColumnBox>
+        )}
+      </UIFlexSpaceBox>
 
       <UIFlexCenterBox sx={{ mt: 12 }}>
         <UIFlexCenterBox sx={{ gap: 4 }}>
@@ -212,9 +366,11 @@ const ProgramTab = (): JSX.Element => {
         </UIFlexCenterBox>
       </UIFlexCenterBox>
       <UIFlexCenterBox sx={{ mt: 4 }}>
-        <Box sx={{ border: 1, padding: 2 }}>
-          <PieChart chartData={personsPerChartData} />
-        </Box>
+        {personsPerChartData && (
+          <Box sx={{ border: 1, padding: 2 }}>
+            <PieChart chartData={personsPerChartData} />
+          </Box>
+        )}
       </UIFlexCenterBox>
       <Box sx={{ my: 8 }}>
         <UIFlexEndBox sx={{ mb: 2 }}>
@@ -230,7 +386,7 @@ const ProgramTab = (): JSX.Element => {
         </UIFlexEndBox>
         <ReportsTable
           columns={programMetricsColumns}
-          rows={programTableData}
+          rows={programList ?? []}
           order="name"
         />
       </Box>
