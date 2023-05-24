@@ -51,3 +51,13 @@ export {
 } from './models.mock';
 
 export { peerCompareData } from './entity.mock';
+export {
+  programTableData,
+  organizationTableData,
+  chartDataTotalRiskScore,
+  chartDataRiskIndicator,
+  riskStatusChartData,
+  statusOverTimeChartData,
+  personsPerChartData,
+  riskScoreHover,
+} from './report.mock';

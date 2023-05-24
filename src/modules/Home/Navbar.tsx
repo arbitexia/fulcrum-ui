@@ -53,6 +53,7 @@ export const HomeNavbar = ({
       console.log(`handleChange(${event.target.value}, ${operation})`);
     }
   };
+
   return (
     <UIContainer>
       <UIFlexSpaceBox sx={{ alignItems: 'flex-end' }}>

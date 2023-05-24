@@ -111,3 +111,15 @@ export type {
 } from './governance.type';
 
 export type { AccessTokenType } from './auth.type';
+export type {
+  ReportsColumnType,
+  ProgramTableType,
+  OrganizationTableType,
+  RetrieveProgramParams,
+  RetrievePersonParams,
+  RetrieveOrgParams,
+  RiskStatusSummaryType,
+  StatusOvertimeType,
+  PersonPerType,
+  IndividualsRiskIndicatorType,
+} from './report.type';

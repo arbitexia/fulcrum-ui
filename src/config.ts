@@ -28,6 +28,7 @@ export default {
     AUDIT: process.env.AUDIT_URL,
     GOVERNANCE: process.env.GOVERNANCE_URL,
     NOTIFICATIONS: process.env.NOTIFICATIONS_URL,
+    REPORT_URL: process.env.REPORT_URL,
   },
   ACCESS_CONTROL_ALLOWED_METHODS: {
     API: ['GET', 'POST'],
@@ -43,5 +44,6 @@ export default {
     AUDIT: ['POST'],
     GOVERNANCE: ['POST'],
     NOTIFICATIONS: ['GET', 'POST'],
+    REPORT: ['POST'],
   },
 };

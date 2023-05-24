@@ -38,6 +38,15 @@ import {
   MaskingType,
 } from '@/types/governance.type';
 import { Notification, NotificationEvent } from '@/types/notification.type';
+import {
+  IndividualsRiskIndicatorType,
+  OrganizationTableType,
+  PersonPerType,
+  ProgramTableType,
+  RiskScoreSummaryType,
+  RiskStatusSummaryType,
+  StatusOvertimeType,
+} from './report.type';
 
 export declare namespace ReduxJson {
   export type CommonReduxData<T> = {
@@ -274,5 +283,18 @@ export declare namespace ReduxJson {
         };
       };
     };
+  };
+
+  export type ReportState = {
+    loading: boolean;
+    initialized: boolean;
+    status: ResponseStatus | null;
+    riskStatusSummary: RiskStatusSummaryType[] | null;
+    statusOverTime: StatusOvertimeType[] | null;
+    personPer: PersonPerType[] | null;
+    programList: ProgramTableType[] | null;
+    riskScoreSummary: RiskScoreSummaryType[] | null;
+    individualsRiskIndicator: IndividualsRiskIndicatorType[] | null;
+    organizationList: OrganizationTableType[] | null;
   };
 }

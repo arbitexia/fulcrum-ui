@@ -10,3 +10,10 @@
 export { ICON_URLS } from './assets';
 export { sidebarMenus } from './home';
 export { NOTIFICATION_TAB, notifcationTabData } from './notification';
+export {
+  reportsTabData,
+  barChartWithTitleOptions,
+  barChartNoTitleOptions,
+  totalStatus,
+  personsPerList,
+} from './reports';
