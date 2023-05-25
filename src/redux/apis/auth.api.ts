@@ -6,7 +6,7 @@
 /**
  * Author: Ritesh Patel
  */
-import { AccessTokenType } from '@/types';
+import { AccessTokenType, AuthParams } from '@/types';
 import axios from 'axios';
 import config from '@/config';
 
@@ -22,6 +22,15 @@ export const refreshToken = async (
   params: AccessTokenType
 ): Promise<AccessTokenType> => {
   const response = await axios.post(`${baseConfigUrl}/api/refresh`, params, {
+    headers,
+  });
+  return response.data;
+};
+
+export const authorize = async (
+  params: AuthParams
+): Promise<AccessTokenType> => {
+  const response = await axios.post(`${baseConfigUrl}/api/authorize`, params, {
     headers,
   });
   return response.data;

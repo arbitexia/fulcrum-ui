@@ -24,7 +24,7 @@ import {
   RiskIndicatorConfig,
 } from '@/types/config.type';
 import { keyComparator } from '@/libs/sort-utils';
-import { checkAuthToken } from '@/libs/auth-token';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.ConfigState = {
   dataSources: {
@@ -65,10 +65,10 @@ export const retrieveDataSources = createAsyncThunk<
 >('config/retrieveDataSources', async (params, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await configApi.loadDataSourceConfig(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -80,10 +80,10 @@ export const retrieveEntitiesConfig = createAsyncThunk<
 >('config/retrieveEntitiesConfig', async (params, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await configApi.loadEntitiesDisplayConfig(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -98,6 +98,7 @@ export const retrieveRiskIndicatorsConfig = createAsyncThunk<
     return await configApi.loadRiskIndicatorsConfig(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });

@@ -51,7 +51,7 @@ import {
   PeerAttributeData,
 } from '@/types/graph.type';
 import { sum } from 'lodash';
-import { checkAuthToken } from '@/libs/auth-token';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const pageLimitDefault: { [pageName: string]: number } = {
   homePage: 25,
@@ -97,7 +97,6 @@ export const retrieveScores = createAsyncThunk<
 >('scores/retrieveScores', async (params: RetrieveScoringParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-     await checkAuthToken();
     if (params.requestType && !params.categories) {
       return await scoresDataApi.loadScoresData(params);
     } else {
@@ -105,6 +104,7 @@ export const retrieveScores = createAsyncThunk<
     }
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -118,7 +118,6 @@ export const retrieveScoresCount = createAsyncThunk<
   async (params: RetrieveScoringCountParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-       await checkAuthToken();
       if (params.requestType && !params.categories) {
         return await scoresDataApi.loadScoresCountData(params);
       } else {
@@ -126,6 +125,7 @@ export const retrieveScoresCount = createAsyncThunk<
       }
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -138,10 +138,10 @@ export const retrieveBasis = createAsyncThunk<
 >('scores/retrieveBasis', async (params: RetrieveBasisParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-     await checkAuthToken();
     return await scoresDataApi.loadBasisData(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -155,10 +155,10 @@ export const retrieveBasisCount = createAsyncThunk<
   async (params: RetrieveBasisCountParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-       await checkAuthToken();
       return await scoresDataApi.loadBasisCountData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -173,10 +173,10 @@ export const retrieveScoresForEntity = createAsyncThunk<
   async (params: RetrieveScoresForEntityParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-       await checkAuthToken();
       return await scoresDataApi.loadScoresForEntityData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -191,10 +191,10 @@ export const retrieveGroupHash = createAsyncThunk<
   async (params: GetPeerGroupRankingParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-       await checkAuthToken();
       return await scoresDataApi.loadPeerGroupHashRankingData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -209,10 +209,10 @@ export const retrieveHistoricalGroupHashes = createAsyncThunk<
   async (params: GetPeerGroupHistoricalRankingParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-       await checkAuthToken();
       return await scoresDataApi.loadPeerGroupHistoricalData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -227,10 +227,10 @@ export const retrievePeerAttributeData = createAsyncThunk<
   async (params: GetPeerAttributeRankingParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-       await checkAuthToken();
       return await scoresDataApi.loadPeerAttributeRankingData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -245,10 +245,10 @@ export const retrieveHistoricalDataForModelAndEntity = createAsyncThunk<
   async (params: RetrieveHistoricalScoreDataForEntityParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-       await checkAuthToken();
       return await scoresDataApi.loadHistoricalDataForEntity(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }

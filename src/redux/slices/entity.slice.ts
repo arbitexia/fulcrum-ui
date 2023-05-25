@@ -70,7 +70,7 @@ import {
 } from '@/redux/slices/governance.slice';
 import { existsInArray } from '@/libs/array-utils';
 import { entityMaskingIcons } from '@/redux/slices/config.slice';
-import { checkAuthToken } from '@/libs/auth-token';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.EntitiesState = {
   loading: true,
@@ -99,10 +99,10 @@ export const getEntities = createAsyncThunk<
 >('entity/getEntities', async (params: GetEntitiesParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await entityApi.loadEntitiesData(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -114,10 +114,10 @@ export const getEntity = createAsyncThunk<
 >('entity/getEntity', async (params: GetEntityParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await entityApi.loadEntityData(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -129,10 +129,10 @@ export const getUnmaskedEntity = createAsyncThunk<
 >('entity/getUnmaskedEntity', async (params: GetEntityParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await entityApi.loadUnmaskedEntityData(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -146,10 +146,10 @@ export const getEntityStatus = createAsyncThunk<
   async (params: QueryEntityStatusParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
       return await entityApi.loadEntityStatusData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -162,10 +162,10 @@ export const newEntityStatus = createAsyncThunk<
 >('entity/newEntityStatus', async (params: NewEntityStatusParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await entityApi.newEntityStatus(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -179,10 +179,10 @@ export const getEntityComments = createAsyncThunk<
   async (params: QueryEntityCommentsParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
       return await entityApi.loadEntityCommentsData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -197,10 +197,10 @@ export const newEntityComment = createAsyncThunk<
   async (params: NewEntityCommentsParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
       return await entityApi.newEntityComments(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }

@@ -18,7 +18,7 @@ import {
   NewFilterParams,
   FilterAttributeType,
 } from '@/types/models.type';
-import { checkAuthToken } from '@/libs/auth-token';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.FiltersState = {
   loading: true,
@@ -37,10 +37,10 @@ export const retrieveFilters = createAsyncThunk<
   async (params: RetrieveFiltersParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
       return await filterApi.loadFiltersData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }

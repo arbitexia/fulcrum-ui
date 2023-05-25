@@ -40,7 +40,7 @@ import {
   reduceData,
   useData,
 } from '@/_mock';
-import { checkAuthToken } from '@/libs/auth-token';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.AttributesState = {
   loading: true,
@@ -61,10 +61,10 @@ export const retrieveAttributes = createAsyncThunk<
   async (params: RetrieveAttributesParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
       return await modelApi.loadAttributesData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -79,10 +79,10 @@ export const retrieveAttribute = createAsyncThunk<
   async (params: RetrieveAttributeParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
-      await checkAuthToken();
       return await modelApi.loadAttributeData(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }

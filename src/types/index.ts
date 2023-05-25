@@ -110,4 +110,4 @@ export type {
   StatusTableType,
 } from './governance.type';
 
-export type { AccessTokenType } from './auth.type';
+export type { AccessTokenType, AuthParams } from './auth.type';

@@ -43,6 +43,7 @@ import {
 } from '@/redux/slices/entity.slice';
 import { formatDate } from '@/libs/time-utils';
 import { getEntityMaskingValuesDefaultStatus } from '@/redux/slices/config.slice';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.GovernanceState = {
   systemMasking: {
@@ -99,6 +100,7 @@ export const retrieveMaskingSystemStatus = createAsyncThunk<
     return await governanceApi.loadMaskingSystemStatus(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -113,6 +115,7 @@ export const setSystemMaskingStatus = createAsyncThunk<
     return await governanceApi.setSystemMaskingStatus(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -129,6 +132,7 @@ export const retrieveMaskingSystemAutoUnmaskPercentage = createAsyncThunk<
       return await governanceApi.loadMaskingSystemAutoUnmaskPercentage(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -146,6 +150,7 @@ export const setMaskingSystemAutoUnmaskPercentage = createAsyncThunk<
       return await governanceApi.setMaskingSystemAutoUnmaskPercentage(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -162,6 +167,7 @@ export const retrieveMaskingSystemAutoUnmaskTopCount = createAsyncThunk<
       return await governanceApi.loadMaskingSystemAutoUnmaskTopCount(params);
     } catch (error) {
       const err = error as AxiosError;
+      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -177,6 +183,7 @@ export const setMaskingSystemAutoUnmaskTopCount = createAsyncThunk<
     return await governanceApi.setMaskingSystemAutoUnmaskTopCount(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -191,6 +198,7 @@ export const retrieveMaskingSystemRemaskDays = createAsyncThunk<
     return await governanceApi.loadMaskingSystemRemaskDays(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -205,6 +213,7 @@ export const setMaskingSystemRemaskDays = createAsyncThunk<
     return await governanceApi.setMaskingSystemRemaskDays(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -219,6 +228,7 @@ export const retrieveMaskings = createAsyncThunk<
     return await governanceApi.getMaskings(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -233,6 +243,7 @@ export const retrieveMaskingsByStatus = createAsyncThunk<
     return await governanceApi.getMaskingsByStatus(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -247,6 +258,7 @@ export const retrieveMasking = createAsyncThunk<
     return await governanceApi.getMasking(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -261,6 +273,7 @@ export const setNewMasking = createAsyncThunk<
     return await governanceApi.setNewMasking(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -275,6 +288,7 @@ export const removeMasking = createAsyncThunk<
     return await governanceApi.deleteMasking(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -289,6 +303,7 @@ export const getAuditEvents = createAsyncThunk<
     return await governanceApi.loadAuditEvents(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -303,6 +318,7 @@ export const getEntityStatusEvents = createAsyncThunk<
     return await governanceApi.loadEntityStatusesEvents(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });

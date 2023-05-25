@@ -29,7 +29,7 @@ import {
 } from '@/types/models.type';
 import { UISelectInterface } from '@/types/common.type';
 import { keyComparator } from '@/libs/sort-utils';
-import { checkAuthToken } from '@/libs/auth-token';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.ModelsState = {
   loading: true,
@@ -47,10 +47,10 @@ export const retrieveModels = createAsyncThunk<
 >('model/retrieveModels', async (params: RetrieveModelsParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await modelApi.loadModelsData(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
