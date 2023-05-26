@@ -73,7 +73,6 @@ import {
   getScoringCount,
   getSelectedCategoriesSelector,
 } from '@/redux/slices/scoring.slice';
-import { useCookies } from 'react-cookie';
 import { addHours } from '@/libs/time-utils';
 import {
   getGlobalStatsByStatus,
@@ -91,13 +90,13 @@ import {
 } from '@/redux/slices/entity.slice';
 import { roundScore } from '@/libs/math-utils';
 import { getScoreColor } from '@/libs/color-generator';
+import { readCookie, writeCookie } from '@/libs/cookie-utils';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
 const HomePage = (): JSX.Element => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const [cookies, setCookie] = useCookies(['accessToken', 'refreshToken']);
   const { query, isReady } = router as {
     query: AccessTokenType;
     isReady: boolean;
@@ -129,7 +128,9 @@ const HomePage = (): JSX.Element => {
   const isRiskIndicatorConfigInitialized = useAppSelector(
     getRiskIndicatorsConfigInitialized
   );
-  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
+  const { accessToken: cookieAccessToken = null } =
+    readCookie as AccessTokenType;
+  console.log(cookieAccessToken, '333');
   const categories = useAppSelector(categoriesSelector);
   const selectedCategories: string[] = useAppSelector(
     getSelectedCategoriesSelector
@@ -204,10 +205,8 @@ const HomePage = (): JSX.Element => {
           )
           .then(noop);
       } else if (!cookieAccessToken && queryAccessToken) {
-        setCookie('accessToken', queryAccessToken, {
-          expires: addHours(new Date(), 1),
-        });
-        setCookie('refreshToken', queryRefreshToken);
+        writeCookie('accessToken', queryAccessToken, 1);
+        writeCookie('refreshToken', queryRefreshToken ?? '');
       }
     }
   }, [
@@ -217,7 +216,6 @@ const HomePage = (): JSX.Element => {
     queryRefreshToken,
     router,
     dispatch,
-    setCookie,
   ]);
 
   useEffect(() => {
