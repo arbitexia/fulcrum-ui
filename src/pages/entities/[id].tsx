@@ -60,10 +60,9 @@ import {
   retrieveHistoricalGroupHashes,
   retrieveScoresForEntity,
 } from '@/redux/slices/scoring.slice';
-import { useCookies } from 'react-cookie';
 import config from '@/config';
 import { noop } from 'lodash';
-import { AccessTokenType } from '@/types';
+import { readCookie } from '@/libs/cookie-utils';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
@@ -91,8 +90,7 @@ const Profile = (): ReactElement => {
   const decodedUnmaskToken = queryUnmaskToken
     ? decodeURIComponent(queryUnmaskToken)
     : '';
-  const [cookies] = useCookies(['accessToken']);
-  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
+  const cookieAccessToken = readCookie('accessToken');
   const entity: Entity | null =
     useAppSelector(entityByIdSelector(entityId)) || null;
 

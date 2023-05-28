@@ -20,9 +20,9 @@ import {
   retrieveNotificationEvents,
   retrieveNotifications,
 } from '@/redux/slices';
-import { useCookies } from 'react-cookie';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { SideBarMenu } from '@/constants/home';
+import { readCookie } from '@/libs/cookie-utils';
 
 const AppSidebar = (): JSX.Element => {
   const router = useRouter();
@@ -36,13 +36,10 @@ const AppSidebar = (): JSX.Element => {
   const notificationEventsCount: number = useAppSelector(
     getNotificationEventsCount
   );
-  const [cookies] = useCookies(['accessToken']);
   const { isReady } = router as {
     isReady: boolean;
   };
-  const { accessToken: cookieAccessToken = null } = cookies as {
-    accessToken?: string | null;
-  };
+  const cookieAccessToken = readCookie('accessToken');
   useEffect(() => {
     if (isReady && cookieAccessToken && !isNotificationEventsInitialized) {
       if (!isNotificationsInitialized) {

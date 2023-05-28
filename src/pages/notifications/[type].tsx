@@ -8,7 +8,6 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useCookies } from 'react-cookie';
 import { useRouter } from 'next/router';
 import { noop } from 'lodash';
 import { useTheme } from '@mui/system';
@@ -18,7 +17,6 @@ import { notifcationTabData, NOTIFICATION_TAB } from '@/constants/notification';
 import { UIContainer, UITabWrapper } from '@/components/UI';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { DashboardLayout } from '@/layouts';
-import { addHours } from '@/libs/time-utils';
 import NotificationNavbar from '@/modules/Notifications/NotificationNavbar';
 import NotificationsTab from '@/modules/Notifications/NotificationsTab';
 import { AccessTokenType } from '@/types';
@@ -43,6 +41,7 @@ import {
 } from '@/redux/slices';
 import { NewNotificationParams } from '@/types/notification.type';
 import { GetEntityParams } from '@/types';
+import { readCookie, writeCookie } from '@/libs/cookie-utils';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
@@ -50,7 +49,6 @@ const Models = (): JSX.Element => {
   const theme = useTheme();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const [cookies, setCookie] = useCookies(['accessToken', 'refreshToken']);
   const isEntityStatusFailedValue = useAppSelector(isEntityStatusFailed);
   const modelsListInitialized: boolean = useAppSelector(isModelsInitialized);
   const attributesListInitialized: boolean = useAppSelector(
@@ -83,7 +81,7 @@ const Models = (): JSX.Element => {
     refreshToken: queryRefreshToken = null,
   } = query as AccessTokenType;
 
-  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
+  const cookieAccessToken = readCookie('accessToken');
 
   const { type: activeTab } = router.query as { type: string };
 
@@ -103,10 +101,8 @@ const Models = (): JSX.Element => {
           )
           .then(noop);
       } else if (!cookieAccessToken && queryAccessToken) {
-        setCookie('accessToken', queryAccessToken, {
-          expires: addHours(new Date(), 1),
-        });
-        setCookie('refreshToken', queryRefreshToken);
+        writeCookie('accessToken', queryAccessToken);
+        writeCookie('refreshToken', queryRefreshToken ?? '');
       }
     }
   }, [
@@ -116,7 +112,6 @@ const Models = (): JSX.Element => {
     queryRefreshToken,
     router,
     dispatch,
-    setCookie,
   ]);
 
   useEffect(() => {

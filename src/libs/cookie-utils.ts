@@ -1,3 +1,12 @@
+/**
+ * Copyright (c) 2023, Red Vector, Inc.
+ * All rights reserved
+ */
+
+/**
+ * Author: Ritesh Patel
+ */
+
 import Cookies from 'js-cookie';
 
 export const writeCookie = (

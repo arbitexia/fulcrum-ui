@@ -10,7 +10,7 @@ import { authApi } from '@/redux/apis';
 import { AxiosError } from 'axios';
 import { readCookie, writeCookie } from './cookie-utils';
 
-export const genRefreshToken = async (err: AxiosError) => {
+export const genRefreshToken = async (err: AxiosError): Promise<void> => {
   try {
     if (err.response?.status === 401) {
       const refreshToken = readCookie('refreshToken');

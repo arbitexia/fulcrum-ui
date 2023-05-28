@@ -12,7 +12,7 @@ import { Box, CircularProgress, LinearProgress } from '@mui/material';
 import { UIContainer } from '@/components/UI';
 import { DashboardLayout } from '@/layouts';
 import { BuildModelNavbar } from '@/modules/Models';
-import { AccessTokenType, AttributesType, RiskIndicatorType } from '@/types';
+import { AttributesType, RiskIndicatorType } from '@/types';
 import { BuildModelCategory, BuildModelWeightModal } from '@/modules/Models';
 import { useRouter } from 'next/router';
 import { useAppDispatch, useAppSelector } from '@/hooks';
@@ -39,8 +39,8 @@ import { RiskIndicatorModelType } from '@/types/models.type';
 import { attributesByIdSelector } from '@/redux/slices/attributes.slice';
 import { selectInitialModelRiskIndicator } from '@/redux/slices/model.slice';
 import config from '@/config';
-import { useCookies } from 'react-cookie';
 import { noop } from 'lodash';
+import { readCookie } from '@/libs/cookie-utils';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
@@ -66,8 +66,7 @@ const Build = (): JSX.Element => {
     isReady: boolean;
   };
   const { modelId } = query as { modelId: string };
-  const [cookies] = useCookies(['accessToken']);
-  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
+  const cookieAccessToken = readCookie('accessToken');
   const attributes: RiskIndicatorType[] = useAppSelector(
     modelAttributesSelector
   );
@@ -293,25 +292,25 @@ const Build = (): JSX.Element => {
                       ) {
                         const newRiskIndicators: RiskIndicatorModelType[] =
                           newModelCategories &&
-                            newModelCategories.length > 0 &&
-                            weightChangeCategoryIndex <
+                          newModelCategories.length > 0 &&
+                          weightChangeCategoryIndex <
                             newModelCategories.length &&
-                            newModelCategories[weightChangeCategoryIndex] &&
-                            newModelCategories[weightChangeCategoryIndex]
-                              .attributes &&
-                            newModelCategories[weightChangeCategoryIndex]
-                              .attributes.length > 0
+                          newModelCategories[weightChangeCategoryIndex] &&
+                          newModelCategories[weightChangeCategoryIndex]
+                            .attributes &&
+                          newModelCategories[weightChangeCategoryIndex]
+                            .attributes.length > 0
                             ? newModelCategories[weightChangeCategoryIndex]
-                              .attributes
+                                .attributes
                             : [initialRiskIndicatorModel];
                         const selectedRiskIndicators: RiskIndicatorModelType[] =
                           categories &&
-                            categories.length > 0 &&
-                            weightChangeCategoryIndex < categories.length &&
-                            categories[weightChangeCategoryIndex] &&
-                            categories[weightChangeCategoryIndex].attributes &&
-                            categories[weightChangeCategoryIndex].attributes
-                              .length > 0
+                          categories.length > 0 &&
+                          weightChangeCategoryIndex < categories.length &&
+                          categories[weightChangeCategoryIndex] &&
+                          categories[weightChangeCategoryIndex].attributes &&
+                          categories[weightChangeCategoryIndex].attributes
+                            .length > 0
                             ? categories[weightChangeCategoryIndex].attributes
                             : newRiskIndicators;
                         setModelWeightAttributes(selectedRiskIndicators);

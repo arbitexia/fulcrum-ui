@@ -73,7 +73,6 @@ import {
   getScoringCount,
   getSelectedCategoriesSelector,
 } from '@/redux/slices/scoring.slice';
-import { addHours } from '@/libs/time-utils';
 import {
   getGlobalStatsByStatus,
   getGlobalStatsInitializedByStatus,
@@ -128,9 +127,7 @@ const HomePage = (): JSX.Element => {
   const isRiskIndicatorConfigInitialized = useAppSelector(
     getRiskIndicatorsConfigInitialized
   );
-  const { accessToken: cookieAccessToken = null } =
-    readCookie as AccessTokenType;
-  console.log(cookieAccessToken, '333');
+  const cookieAccessToken = readCookie('accessToken');
   const categories = useAppSelector(categoriesSelector);
   const selectedCategories: string[] = useAppSelector(
     getSelectedCategoriesSelector
@@ -205,7 +202,7 @@ const HomePage = (): JSX.Element => {
           )
           .then(noop);
       } else if (!cookieAccessToken && queryAccessToken) {
-        writeCookie('accessToken', queryAccessToken, 1);
+        writeCookie('accessToken', queryAccessToken);
         writeCookie('refreshToken', queryRefreshToken ?? '');
       }
     }
