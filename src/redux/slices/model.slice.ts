@@ -10,6 +10,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppDispatch } from '@/redux/store';
 import {
   AttributesType,
+  Filter,
   ReduxJson,
   ResponseStatus,
   RiskIndicatorType,
@@ -22,6 +23,7 @@ import {
   FullModel,
   FullRiskIndicator,
   Model,
+  ModelFeatureFilter,
   NewModelParams,
   RetrieveModelParams,
   RetrieveModelsParams,
@@ -29,7 +31,7 @@ import {
 } from '@/types/models.type';
 import { UISelectInterface } from '@/types/common.type';
 import { keyComparator } from '@/libs/sort-utils';
-import { checkAuthToken } from '@/libs/auth-token';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.ModelsState = {
   loading: true,
@@ -47,10 +49,10 @@ export const retrieveModels = createAsyncThunk<
 >('model/retrieveModels', async (params: RetrieveModelsParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await modelApi.loadModelsData(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -520,6 +522,12 @@ const modelFunctionsByOperator: {
       return inputModel;
     }
   },
+  setFeatureFilter: ({ inputModel, value }) => {
+    return {
+      ...inputModel,
+      featureFilter: [{ filterId: value as string }],
+    };
+  },
 };
 
 const createNewRiskIndicatorObject: () => RiskIndicatorModelType = () => {
@@ -614,6 +622,41 @@ const modelsSlice = createSlice({
         };
       }
       return state;
+    },
+    setDefaultFilterId: (state, param) => {
+      const { payload } = param;
+      const {
+        modelId,
+        defaultFilterId,
+      }: { modelId: string; defaultFilterId: Filter['filterId'] } = payload;
+      if (modelId && defaultFilterId) {
+        const existingModel: Model = state.models[modelId];
+        const defaultModelFilter: ModelFeatureFilter = {
+          filterId: defaultFilterId,
+        };
+        const defaultModelFilterList: ModelFeatureFilter[] = [
+          defaultModelFilter,
+        ];
+        const featureFilter =
+          existingModel?.featureFilter ?? defaultModelFilterList;
+        const newModel: Model = {
+          ...existingModel,
+          featureFilter,
+        };
+        return {
+          ...state,
+          previousModels: { ...state.models },
+          models: { ...state.models, [modelId]: newModel },
+        };
+      }
+      return state;
+    },
+    resetModelsState: (state) => {
+      return {
+        ...state,
+        models: { ...state.previousModels },
+        previousModels: undefined,
+      };
     },
   },
   extraReducers: (builder) => {
@@ -1123,6 +1166,11 @@ export const getSelectedModelId = (state: RootState): string =>
 export const isModelsInitialized = (state: RootState): boolean =>
   state.models.initialized;
 
-export const { addNewModel, modelValueChangeHandler, setSelectedModelId } =
-  modelsSlice.actions;
+export const {
+  addNewModel,
+  modelValueChangeHandler,
+  setSelectedModelId,
+  setDefaultFilterId,
+  resetModelsState,
+} = modelsSlice.actions;
 export default modelsSlice.reducer;

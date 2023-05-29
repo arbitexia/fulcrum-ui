@@ -118,7 +118,9 @@ export {
   filtersSelector,
   currentFilterSelector,
   filterByIdSelector,
-  getCurrentFilterIdSelector,
+  getCurrentFilterByIdSelector,
+  getAllFiltersForUISelector,
+  getDefaultFilterIdForUISelector,
 } from './filters.slice';
 
 export {
@@ -186,6 +188,7 @@ export {
   getEntitiesConfigInitialized,
   getEntityProperties,
   getEntityDetailProperties,
+  getEntityFilterValues,
   getEntityStatusValues,
   getEntityMaskingValues,
   getHomePageTopPercent,

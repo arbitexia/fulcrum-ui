@@ -27,6 +27,7 @@ import {
 import { formatDate } from '@/libs/time-utils';
 import { getActiveModels } from '@/redux/slices/model.slice';
 import { getEntitiesByIdWithMasking } from '@/redux/slices/entity.slice';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.NotificationState = {
   notifications: {
@@ -53,6 +54,7 @@ export const retrieveNotification = createAsyncThunk<
     return await notificationsApi.loadNotification(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -67,6 +69,7 @@ export const retrieveNotifications = createAsyncThunk<
     return await notificationsApi.loadNotifications(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -81,6 +84,7 @@ export const createNotification = createAsyncThunk<
     return await notificationsApi.newNotification(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -95,6 +99,7 @@ export const removeNotification = createAsyncThunk<
     return await notificationsApi.deleteNotification(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -109,6 +114,7 @@ export const retrieveNotificationEvent = createAsyncThunk<
     return await notificationsApi.loadNotificationEvent(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -123,6 +129,7 @@ export const retrieveNotificationEvents = createAsyncThunk<
     return await notificationsApi.loadNotificationEvents(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -137,6 +144,7 @@ export const createNotificationEvent = createAsyncThunk<
     return await notificationsApi.newNotificationEvent(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -151,6 +159,7 @@ export const removeNotificationEvent = createAsyncThunk<
     return await notificationsApi.deleteNotificationEvent(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });

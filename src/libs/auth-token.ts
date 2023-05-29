@@ -9,6 +9,7 @@
 import { authApi } from '@/redux/apis';
 import jwt_decode, { JwtPayload } from 'jwt-decode';
 import { AccessTokenType } from '@/types';
+import { AxiosError } from 'axios';
 
 const writeCookie = (
   name: string,
@@ -36,41 +37,17 @@ const readCookie = (name: string): string | string[] | null => {
   return result;
 };
 
-export const checkAuthToken = async (): Promise<AccessTokenType> => {
-  const accessToken = readCookie('accessToken');
-  const refreshToken = readCookie('refreshToken');
-
+export const genRefreshToken = async (err: AxiosError) => {
   try {
-    const decoded: JwtPayload = jwt_decode(accessToken as string);
-    const expirationTime = decoded.exp as number;
-    const currentTime = Date.now() / 1000;
-    const isExpired = expirationTime < currentTime;
-
-    if (isExpired) {
+    if (err.response?.status === 401) {
+      const refreshToken = readCookie('refreshToken');
       const result = await authApi.refreshToken({
         refreshToken: refreshToken as string,
       });
-
-      if (result) {
-        writeCookie('accessToken', result?.accessToken ?? '', new Date());
-        writeCookie('refreshToken', result?.refreshToken ?? '', new Date());
-        return result;
-      } else {
-        return {
-          accessToken: null,
-          refreshToken: null,
-        };
-      }
-    } else {
-      return {
-        accessToken: accessToken as string,
-        refreshToken: refreshToken as string,
-      };
+      writeCookie('accessToken', result?.accessToken ?? '', new Date());
+      writeCookie('refreshToken', result?.refreshToken ?? '', new Date());
     }
   } catch (error) {
-    return {
-      accessToken: null,
-      refreshToken: null,
-    };
+    throw new Error('Authentication failed');
   }
 };

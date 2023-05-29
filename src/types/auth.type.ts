@@ -11,3 +11,8 @@ export type AccessTokenType = {
   accessToken?: string | null;
   refreshToken?: string | null;
 };
+
+export type AuthParams = {
+  userName: string;
+  password: string;
+};

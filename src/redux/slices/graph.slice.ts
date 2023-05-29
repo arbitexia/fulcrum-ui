@@ -14,7 +14,7 @@ import { AxiosError } from 'axios';
 import { BubbleDataPoint, ChartData, ScatterDataPoint } from 'chart.js';
 import { PeerDataType, GraphDataType, GetGraphParams } from '@/types';
 import { BarChartDataSets, BarChartDataSet } from '@/types/scoring.type';
-import { checkAuthToken } from '@/libs/auth-token';
+import { genRefreshToken } from '@/libs/auth-token';
 
 const initialState: ReduxJson.GraphState = {
   loading: true,
@@ -30,10 +30,10 @@ export const retrievePeerData = createAsyncThunk<
 >('graph/getPeer', async (params: GetGraphParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await graphApi.loadPeerData(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -45,10 +45,10 @@ export const retrieveGraphData = createAsyncThunk<
 >('graph/getGraph', async (params: GetGraphParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
-    await checkAuthToken();
     return await graphApi.loadGraphData(params);
   } catch (error) {
     const err = error as AxiosError;
+    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });

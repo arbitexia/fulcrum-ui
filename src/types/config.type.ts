@@ -10,6 +10,7 @@ export type DataSourceDescriptorConfig = {
   descriptors: {
     [descriptorName: string]: {
       labels: string[];
+      entityFields: string[];
     };
   };
 };
