@@ -94,6 +94,7 @@ export const modifyModel = async (params: NewModelParams): Promise<Model> => {
     lastUpdate: params.lastUpdateDate,
     active: params.active,
     attributes: modelJsonParsed.attributes,
+    featureFilter: modelJsonParsed.featureFilter,
   };
 };
 

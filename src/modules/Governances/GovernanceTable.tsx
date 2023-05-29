@@ -130,7 +130,7 @@ export default function GovernanceTable<
   useEffect(() => {
     if (
       (tableList === null && rows && rows.length > 0) ||
-      (refresh && tableList && tableList.length > rows.length)
+      (refresh && tableList && tableList.length !== rows.length)
     ) {
       setTableList(rows);
       if (setRefresh) {

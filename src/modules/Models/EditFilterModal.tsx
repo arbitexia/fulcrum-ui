@@ -22,23 +22,33 @@ import {
   filterValueChangeHandler,
   saveFilter,
 } from '@/redux/slices/filters.slice';
+import { UISelectInterface } from '@/types/common.type';
 
-interface EditListModalProps extends DefaultModalProps {
-  id: number | string | null;
+interface EditFilterModalProps extends DefaultModalProps {
+  id: string;
+  filterFieldData: UISelectInterface[];
   accessToken: string | null;
 }
 
 export const EditFilterModal = ({
   open,
   onClose,
+  filterFieldData,
+  id,
   accessToken = null,
-}: EditListModalProps): JSX.Element => {
+}: EditFilterModalProps): JSX.Element => {
   const dispatch = useAppDispatch();
   const filter = useAppSelector(currentFilterSelector);
   const [currentFilter, setCurrentFilter] = useState<Filter | undefined>(
     filter
   );
-  const id = filter?.id ?? 'NEW';
+
+  useEffect(() => {
+    if (open && filter) {
+      setCurrentFilter(filter);
+    }
+  }, [open, setCurrentFilter, filter]);
+
   useEffect(() => {
     if (
       !filter?.attributes ||
@@ -113,6 +123,11 @@ export const EditFilterModal = ({
     }
   };
 
+  const closeFn = (): void => {
+    setCurrentFilter(undefined);
+    onClose();
+  };
+
   const dispatchSave = (args: NewFilterParams): Promise<unknown> => {
     return new Promise<void>((resolve) => {
       dispatch(
@@ -141,16 +156,16 @@ export const EditFilterModal = ({
         author,
         name: currentFilter?.name ?? '',
         lastUpdateDate: Date.now(),
-      }).then(() => onClose());
+      }).then(() => closeFn());
     } else {
-      onClose();
+      closeFn();
     }
   };
 
   return (
     <UIDefaultDialog
       open={open}
-      onClose={onClose}
+      onClose={closeFn}
       title="Edit Filter"
       modalWidth="1210px"
     >
@@ -194,6 +209,7 @@ export const EditFilterModal = ({
                 handleActionClick={handleActionClick}
                 handleSelectChange={handleSelectChange}
                 handleInputChange={handleInputChange}
+                filterFieldData={filterFieldData}
               />
             ))
           : ''}

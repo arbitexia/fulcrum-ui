@@ -10,6 +10,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppDispatch } from '@/redux/store';
 import {
   AttributesType,
+  Filter,
   ReduxJson,
   ResponseStatus,
   RiskIndicatorType,
@@ -22,6 +23,7 @@ import {
   FullModel,
   FullRiskIndicator,
   Model,
+  ModelFeatureFilter,
   NewModelParams,
   RetrieveModelParams,
   RetrieveModelsParams,
@@ -520,6 +522,12 @@ const modelFunctionsByOperator: {
       return inputModel;
     }
   },
+  setFeatureFilter: ({ inputModel, value }) => {
+    return {
+      ...inputModel,
+      featureFilter: [{ filterId: value as string }],
+    };
+  },
 };
 
 const createNewRiskIndicatorObject: () => RiskIndicatorModelType = () => {
@@ -614,6 +622,41 @@ const modelsSlice = createSlice({
         };
       }
       return state;
+    },
+    setDefaultFilterId: (state, param) => {
+      const { payload } = param;
+      const {
+        modelId,
+        defaultFilterId,
+      }: { modelId: string; defaultFilterId: Filter['filterId'] } = payload;
+      if (modelId && defaultFilterId) {
+        const existingModel: Model = state.models[modelId];
+        const defaultModelFilter: ModelFeatureFilter = {
+          filterId: defaultFilterId,
+        };
+        const defaultModelFilterList: ModelFeatureFilter[] = [
+          defaultModelFilter,
+        ];
+        const featureFilter =
+          existingModel?.featureFilter ?? defaultModelFilterList;
+        const newModel: Model = {
+          ...existingModel,
+          featureFilter,
+        };
+        return {
+          ...state,
+          previousModels: { ...state.models },
+          models: { ...state.models, [modelId]: newModel },
+        };
+      }
+      return state;
+    },
+    resetModelsState: (state) => {
+      return {
+        ...state,
+        models: { ...state.previousModels },
+        previousModels: undefined,
+      };
     },
   },
   extraReducers: (builder) => {
@@ -1123,6 +1166,11 @@ export const getSelectedModelId = (state: RootState): string =>
 export const isModelsInitialized = (state: RootState): boolean =>
   state.models.initialized;
 
-export const { addNewModel, modelValueChangeHandler, setSelectedModelId } =
-  modelsSlice.actions;
+export const {
+  addNewModel,
+  modelValueChangeHandler,
+  setSelectedModelId,
+  setDefaultFilterId,
+  resetModelsState,
+} = modelsSlice.actions;
 export default modelsSlice.reducer;

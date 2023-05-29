@@ -7,8 +7,14 @@
  * Author: Ritesh Patel
  */
 
-import React, { useState } from 'react';
-import { Box, Stack, TextField, Typography } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import {
+  Box,
+  CircularProgress,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { UIFlexWrapBox, UIIOSSwitch } from '@/components/UI';
 import {
   EntityProperty,
@@ -20,9 +26,11 @@ import { useAppDispatch, useAppSelector } from '@/hooks';
 import {
   getAutoUnmaskTopCountSelector,
   getEntityProperties,
+  getMaskedEntityIdsSelector,
   getRemaskAfterDaysSelector,
   getSystemMaskingSelector,
   getUnmaskedTableData,
+  needsEntitiesSelector,
   setMaskingSystemAutoUnmaskTopCount,
   setNewMasking,
 } from '@/redux/slices';
@@ -38,11 +46,24 @@ const Unmasking = ({ accessToken }: { accessToken: string }): JSX.Element => {
   const isMasking = useAppSelector(getSystemMaskingSelector);
   const topCountMasking = useAppSelector(getAutoUnmaskTopCountSelector);
   const remaskDaysValue = useAppSelector(getRemaskAfterDaysSelector);
+  const maskedEntitiesIdsSelector = useAppSelector(getMaskedEntityIdsSelector);
+  const entitiesValuesNeeded = useAppSelector(
+    needsEntitiesSelector(maskedEntitiesIdsSelector)
+  );
   const unmaskTableData: UnmaskingTableType[] =
     useAppSelector(getUnmaskedTableData);
   const entityPropertyColumns: EntityProperty[] =
     useAppSelector(getEntityProperties);
+  const [previousValues, setPreviousValues] =
+    useState<UnmaskingTableType[]>(unmaskTableData);
   const [refresh, setRefresh] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (unmaskTableData.length > previousValues.length) {
+      setPreviousValues(unmaskTableData);
+      setRefresh(true);
+    }
+  }, [setRefresh, setPreviousValues, previousValues, unmaskTableData]);
 
   const filteredEntityPropertyColumns: EntityProperty[] = entityPropertyColumns
     ? entityPropertyColumns.filter((entityProperty: EntityProperty) => {
@@ -215,16 +236,19 @@ const Unmasking = ({ accessToken }: { accessToken: string }): JSX.Element => {
             days
           </Typography>
         </UIFlexWrapBox>
-        <GovernanceTable
-          columns={columns}
-          rows={unmaskTableData}
-          order="name"
-          type="unmask"
-          tableRole="checkbox"
-          unmaskFunction={unmask}
-          refresh={refresh}
-          setRefresh={setRefresh}
-        />
+        {entitiesValuesNeeded.length > 0 && <CircularProgress />}
+        {entitiesValuesNeeded.length === 0 && (
+          <GovernanceTable
+            columns={columns}
+            rows={unmaskTableData}
+            order="name"
+            type="unmask"
+            tableRole="checkbox"
+            unmaskFunction={unmask}
+            refresh={refresh}
+            setRefresh={setRefresh}
+          />
+        )}
       </Stack>
     </Box>
   );

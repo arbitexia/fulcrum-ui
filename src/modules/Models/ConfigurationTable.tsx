@@ -308,6 +308,8 @@ const ConfigurationTable = ({
                                 onAction(item, row.listId, row.listId);
                               } else if ('id' in row && row.id) {
                                 onAction(item, row.id, row.name);
+                              } else if ('filterId' in row && row.filterId) {
+                                onAction(item, row.filterId, row.name);
                               }
                             }
                           }}

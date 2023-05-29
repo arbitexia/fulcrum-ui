@@ -23,7 +23,6 @@ export {
 } from './profile.mock';
 
 export {
-  filterList,
   peerList,
   frequencyList,
   resultRefreshList,
@@ -33,7 +32,6 @@ export {
   modelsCategoryList,
   riskIndicatorsTableData,
   filtersTableData,
-  filterFieldData,
   filterOptionData,
   riskTypeData,
   behaviorData,

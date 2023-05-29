@@ -25,6 +25,8 @@ import {
 } from '@/types/config.type';
 import { keyComparator } from '@/libs/sort-utils';
 import { genRefreshToken } from '@/libs/auth-token';
+import { UISelectInterface } from '@/types/common.type';
+import { formatKey } from '@/libs/string-utils';
 
 const initialState: ReduxJson.ConfigState = {
   dataSources: {
@@ -33,6 +35,7 @@ const initialState: ReduxJson.ConfigState = {
     initialized: false,
     dataSourcesSelect: [],
     dataSourcesFields: {},
+    entityFields: [],
   },
   entities: {
     loading: false,
@@ -123,31 +126,43 @@ const configSlice = createSlice({
           const dataSourcesFields: {
             [descriptorName: string]: { id: string; name: string }[];
           } = {};
+          const newSetEntityFields = new Set<string>(
+            state.dataSources.entityFields
+          );
           const { descriptors } = payload;
           Object.entries(descriptors).forEach((descriptorObject) => {
             const [descriptorName, descriptorSubObject]: [
               string,
-              { labels: string[] }
+              { labels: string[]; entityFields: string[] }
             ] = descriptorObject;
             const dataSource: { id: string; name: string } = {
               id: descriptorName,
               name: descriptorName,
             };
-            const { labels: subObjectLabels } = descriptorSubObject;
+            const {
+              labels: subObjectLabels,
+              entityFields: entityFieldsForObject,
+            } = descriptorSubObject;
             const labelsForObject: { id: string; name: string }[] = [];
             subObjectLabels.forEach((label: string) => {
               labelsForObject.push({ id: label, name: label });
             });
+            if (entityFieldsForObject) {
+              entityFieldsForObject.forEach((label: string) => {
+                newSetEntityFields.add(label);
+              });
+            }
             dataSources.push(dataSource);
             dataSourcesFields[descriptorName] = labelsForObject;
           });
-          state.dataSources.loading = false;
-          state.dataSources.initialized = true;
+          state.dataSources.entityFields = Array.from(newSetEntityFields);
           dataSources.sort(
             keyComparator<{ id: string; name: string }>(dataSources, 'name')
           );
           state.dataSources.dataSourcesSelect = dataSources;
           state.dataSources.dataSourcesFields = dataSourcesFields;
+          state.dataSources.loading = false;
+          state.dataSources.initialized = true;
           state.dataSources.status = ResponseStatus.SUCCESS;
         }
       )
@@ -238,6 +253,15 @@ export const getEntityProperties = (state: RootState): EntityProperty[] =>
 
 export const getEntityDetailProperties = (state: RootState): EntityProperty[] =>
   state.config.entities.entityDetailProperties;
+
+export const getEntityFilterValues = (
+  state: RootState
+): UISelectInterface[] => {
+  const entityFilterFields: Set<string> = state.config.dataSources.entityFields;
+  return Array.from(entityFilterFields).map((entityFilter: string) => {
+    return { id: entityFilter, name: formatKey(entityFilter) };
+  });
+};
 
 export const getEntityStatusValues = (
   state: RootState

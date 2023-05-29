@@ -93,6 +93,10 @@ export type WeightBase = {
   weight: number;
 };
 
+export type ModelFeatureFilter = {
+  filterId: Filter['filterId'];
+};
+
 export type Model = {
   name: string;
   description?: string;
@@ -101,6 +105,7 @@ export type Model = {
   status?: string;
   active?: boolean;
   attributes: AttributesType[];
+  featureFilter?: ModelFeatureFilter[];
 } & IdBase;
 
 export type AttributesType = {
@@ -123,6 +128,22 @@ export type Filter = {
   active?: boolean;
   attributes: FilterAttributeType[];
 } & IdBase;
+
+export type FiltersBackend = {
+  filterId: string;
+  author: string;
+  filterJson: string;
+  lastUpdateDate: number;
+  name: string;
+};
+export type FiltersJsonParsed = {
+  id: string | null;
+  filterId: string;
+  name: string;
+  description: string;
+  owner: string;
+  attributes: FilterAttributeType[];
+};
 
 export type FilterAttributeType = {
   id: number;
