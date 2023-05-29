@@ -12,6 +12,7 @@ import {
   RetrieveFiltersParams,
   RetrieveFilterParams,
   NewFilterParams,
+  FiltersBackend,
 } from '@/types/models.type';
 import axios from 'axios';
 import config from '@/config';
@@ -26,8 +27,8 @@ const headers = {
 
 export const loadFiltersData = async (
   params: RetrieveFiltersParams
-): Promise<Filter[]> => {
-  const response = await axios.post<Filter[]>(
+): Promise<FiltersBackend[]> => {
+  const response = await axios.post<FiltersBackend[]>(
     `${baseUrl}/api/filters`,
     params,
     {

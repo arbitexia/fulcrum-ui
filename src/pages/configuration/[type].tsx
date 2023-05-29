@@ -41,6 +41,8 @@ import {
   deleteStats,
   deleteAttribute,
   deleteList,
+  getEntityFilterValues,
+  getDefaultFilterIdForUISelector,
 } from '@/redux/slices';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { DeleteListParams, List, Model, RiskIndicatorType } from '@/types';
@@ -68,6 +70,7 @@ import { fullRun } from '@/redux/slices/control.slice';
 import { useAppToast } from '@/providers';
 import { ErrorModal } from '@/modules/Models/ErrorModal';
 import { readCookie } from '@/libs/cookie-utils';
+import { setDefaultFilterId } from '@/redux/slices/model.slice';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
@@ -119,7 +122,13 @@ const activeTabDispatchers: {
             retrieveAttributes(args)
           )
         )
-        .then(noop);
+        .then(
+          dispatcher(
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            retrieveFilters(args)
+          )
+        );
     }
   },
   risk: async (dispatcher, args?: RetrieveAttributesParams) => {
@@ -148,13 +157,6 @@ const activeTabDispatchers: {
         retrieveFilters(args)
       ).then(noop);
     }
-  },
-  newFilter: async (dispatcher) => {
-    dispatcher(
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      addNewFilter({})
-    );
   },
 };
 
@@ -206,12 +208,17 @@ const Models = (): JSX.Element => {
     getHasDeleteAttributeMessage
   );
   const cookieAccessToken = readCookie('accessToken');
+  const filterFieldData = useAppSelector(getEntityFilterValues);
+  const defaultFilterId: Filter['filterId'] = useAppSelector(
+    getDefaultFilterIdForUISelector
+  );
   const [value, setValue] = useState<number>(0);
   const [models, setModels] = useState<Model[]>(modelsInput);
   const [attributes, setAttributes] =
     useState<RiskIndicatorType[]>(attributesInput);
   const [lists, setLists] = useState<List[]>(listsInput);
   const [filters, setFilters] = useState<Filter[]>(filtersInput);
+  const [filterId, setFilterId] = useState<string | null>(null);
   const [openModelConfig, setOpenModelConfig] = useState<boolean>(false);
   const [openListEdit, setOpenListEdit] = useState<boolean>(false);
   const [openFilterEdit, setOpenFilterEdit] = useState<boolean>(false);
@@ -305,10 +312,10 @@ const Models = (): JSX.Element => {
     }
     if (url === 'filter') {
       if (id === 'new') {
-        const dispatcher = activeTabDispatchers['newFilter'];
-        dispatcher && dispatcher(dispatch);
+        dispatch(addNewFilter({}));
         setOpenFilterEdit(true);
       } else if (action === 'edit') {
+        setFilterId(id as string);
         dispatch(setSelectedFilterId({ filterId: id }));
         setOpenFilterEdit(true);
       }
@@ -337,6 +344,7 @@ const Models = (): JSX.Element => {
           router.push(`/configuration/${url}/build?modelId=${id}`).then(noop);
         } else if (action === 'settings') {
           setActionId(id);
+          dispatch(setDefaultFilterId({ modelId: id, defaultFilterId }));
           setOpenModelConfig(true);
         } else if (action === 'delete') {
           setActionId(id);
@@ -612,22 +620,44 @@ const Models = (): JSX.Element => {
           </UITabPanel>
         )}
       </UIContainer>
-      <ModelsConfigModal
-        open={openModelConfig}
-        onClose={() => setOpenModelConfig(false)}
-      />
+      {cookieAccessToken && actionId && (
+        <ModelsConfigModal
+          open={openModelConfig}
+          onClose={() => setOpenModelConfig(false)}
+          accessToken={cookieAccessToken}
+          modelId={actionId as string}
+        />
+      )}
       <EditListModal
         open={openListEdit}
         onClose={() => setOpenListEdit(false)}
         id={actionId}
         accessToken={cookieAccessToken}
       />
-      <EditFilterModal
-        open={openFilterEdit}
-        onClose={() => setOpenFilterEdit(false)}
-        id={actionId}
-        accessToken={cookieAccessToken}
-      />
+      {filterId && (
+        <EditFilterModal
+          open={openFilterEdit}
+          onClose={() => {
+            setFilterId(null);
+            setOpenFilterEdit(false);
+          }}
+          id={filterId}
+          accessToken={cookieAccessToken}
+          filterFieldData={filterFieldData}
+        />
+      )}
+      {!filterId && (
+        <EditFilterModal
+          open={openFilterEdit}
+          onClose={() => {
+            setFilterId(null);
+            setOpenFilterEdit(false);
+          }}
+          id="NEW"
+          accessToken={cookieAccessToken}
+          filterFieldData={filterFieldData}
+        />
+      )}
       {actionId !== null && (
         <DeleteConfirmModal
           open={openDeleteModal}
@@ -649,10 +679,6 @@ const Models = (): JSX.Element => {
           typeUrl={activeTab}
         />
       )}
-      <ModelsConfigModal
-        open={openModelConfig}
-        onClose={() => setOpenModelConfig(false)}
-      />
     </DashboardLayout>
   );
 };

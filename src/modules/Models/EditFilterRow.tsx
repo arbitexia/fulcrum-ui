@@ -11,9 +11,10 @@ import { Box, Typography, IconButton, SelectChangeEvent } from '@mui/material';
 import { AddCircleOutline } from '@mui/icons-material';
 import { UIFlexWrapBox, UISelect, UIDefaultTextField } from '@/components/UI';
 import { FilterAttributeType } from '@/types';
-import { filterFieldData, filterOptionData } from '@/_mock';
+import { filterOptionData } from '@/_mock';
 import Image from 'next/image';
 import { appImageLoader } from '@/libs/image-loader';
+import { UISelectInterface } from '@/types/common.type';
 
 export const EditFilterRow = ({
   attribute,
@@ -21,6 +22,7 @@ export const EditFilterRow = ({
   handleSelectChange,
   handleInputChange,
   handleActionClick,
+  filterFieldData,
 }: {
   attribute: FilterAttributeType;
   index: number;
@@ -45,6 +47,7 @@ export const EditFilterRow = ({
     }
   ) => void;
   handleActionClick: (listIndex: number) => void;
+  filterFieldData: UISelectInterface[];
 }): JSX.Element => {
   const [data, setData] = useState<FilterAttributeType | null>(null);
   useEffect(() => {
@@ -88,7 +91,6 @@ export const EditFilterRow = ({
           </Box>
           <UISelect
             itemList={filterFieldData}
-            defaultValue={''}
             value={data.field}
             handleChange={(e) =>
               handleSelectChange(e, {
@@ -100,7 +102,6 @@ export const EditFilterRow = ({
           />
           <UISelect
             itemList={filterOptionData}
-            defaultValue={''}
             value={data.option}
             handleChange={(e) =>
               handleSelectChange(e, {
@@ -111,7 +112,7 @@ export const EditFilterRow = ({
             width="207px"
           />
           <UIDefaultTextField
-            defaultValue={data.value}
+            value={data.value}
             variant="standard"
             onChange={(e) =>
               handleInputChange(e, {

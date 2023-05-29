@@ -21,7 +21,6 @@ import {
   MONTH_AS_MILLISECONDS_FROM_EPOCH,
   YEAR_AS_MILLISECONDS_FROM_EPOCH,
 } from '@/libs/time-utils';
-import { UISelectInterface } from '@/types/common.type';
 
 const createModelTableData = (
   id: number,
@@ -246,8 +245,6 @@ export const filtersTableData: ModelsTableDataType[] = [
   ),
 ];
 
-export const filterList = [{ id: 1, name: 'Active Employees Only' }];
-
 export const peerList = [{ id: 1, name: 'Business Unit' }];
 
 export const frequencyList = [{ id: 1, name: 'Daily' }];
@@ -344,14 +341,6 @@ export const externalAppDescriptionData: { [id: string]: string } = {
   pr: 'Open Source / Public Records',
   sm: 'Social Media Data Collection',
 };
-
-export const filterFieldData: UISelectInterface[] = [
-  { id: 1, name: 'Job Title' },
-  { id: 2, name: 'Location' },
-  { id: 3, name: 'Business Unit' },
-  { id: 4, name: 'Clearance' },
-  { id: 5, name: 'Employee Status' },
-];
 
 export const filterOptionData = [
   { id: 'DOES_NOT_CONTAIN', name: 'Does Not Contain (Text)' },

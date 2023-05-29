@@ -17,8 +17,12 @@ import {
   RetrieveFilterParams,
   NewFilterParams,
   FilterAttributeType,
+  FiltersBackend,
+  FiltersJsonParsed,
 } from '@/types/models.type';
 import { genRefreshToken } from '@/libs/auth-token';
+import { UISelectInterface } from '@/types/common.type';
+import { keyComparator } from '@/libs/sort-utils';
 
 const initialState: ReduxJson.FiltersState = {
   loading: true,
@@ -29,7 +33,7 @@ const initialState: ReduxJson.FiltersState = {
 };
 
 export const retrieveFilters = createAsyncThunk<
-  Filter[],
+  FiltersBackend[],
   RetrieveFiltersParams,
   { dispatch: AppDispatch; state: RootState }
 >(
@@ -251,17 +255,30 @@ const filtersSlice = createSlice({
       })
       .addCase(
         retrieveFilters.fulfilled,
-        (state, { payload }: PayloadAction<Filter[]>) => {
+        (state, { payload }: PayloadAction<FiltersBackend[]>) => {
           state.loading = true;
           const filtersByFilterId: { [id: string]: Filter } = {};
           let firstFilterId: string | null = null;
           payload.map((filter) => {
-            const { filterId } = filter;
+            const { filterId, filterJson, name, lastUpdateDate, author } =
+              filter;
             if (filterId) {
               if (firstFilterId == null) {
                 firstFilterId = filter.filterId;
               }
-              filtersByFilterId[filterId] = filter;
+              const filterJsonParsed: FiltersJsonParsed =
+                JSON.parse(filterJson);
+              const { description, attributes } = filterJsonParsed;
+              const newFilter: Filter = {
+                id: filterId,
+                filterId,
+                name,
+                owner: author,
+                lastUpdate: lastUpdateDate,
+                description,
+                attributes,
+              };
+              filtersByFilterId[filterId] = newFilter;
             }
           });
 
@@ -309,10 +326,11 @@ const filtersSlice = createSlice({
         (state, { payload }: PayloadAction<string>) => {
           state.loading = false;
           const id = payload as string;
+          const updateTimestamp = new Date().getTime();
           if (id && state.newFilter) {
             state.filters = {
               ...state.filters,
-              [id]: { ...state.newFilter, id: id },
+              [id]: { ...state.newFilter, id: id, lastUpdate: updateTimestamp },
             };
             state.newFilter = null;
           }
@@ -341,7 +359,7 @@ export const filterByIdSelector =
   (state: RootState) =>
     state.filters?.filters && state.filters?.filters[filterId];
 
-export const getCurrentFilterIdSelector =
+export const getCurrentFilterByIdSelector =
   (filterId: string): ((state: RootState) => Filter | undefined) =>
   (state: RootState) => {
     if (filterId === 'NEW') {
@@ -349,6 +367,32 @@ export const getCurrentFilterIdSelector =
     }
     return state.filters?.filters && state.filters?.filters[filterId];
   };
+
+export const getAllFiltersForUISelector = (
+  state: RootState
+): UISelectInterface[] => {
+  const filtersDictionary: { [filterId: string]: Filter } =
+    state?.filters?.filters ?? {};
+  const retval: UISelectInterface[] = Object.entries(filtersDictionary).map(
+    ([filterId, filterObject]: [filterId: string, filterObject: Filter]) => {
+      const { name } = filterObject;
+      return { id: filterId, name };
+    }
+  );
+  retval.sort(keyComparator<UISelectInterface>(retval, 'name'));
+  return retval;
+};
+
+export const getDefaultFilterIdForUISelector = (
+  state: RootState
+): Filter['filterId'] => {
+  const allFilters = getAllFiltersForUISelector(state);
+  if (allFilters && allFilters.length > 0) {
+    const firstItem: UISelectInterface = allFilters[0];
+    return firstItem.id as string;
+  }
+  return '';
+};
 
 export const { addNewFilter, filterValueChangeHandler, setSelectedFilterId } =
   filtersSlice.actions;

@@ -71,6 +71,7 @@ export declare namespace ReduxJson {
       initialized: boolean;
       dataSourcesSelect: { id: string; name: string }[];
       dataSourcesFields: { [dataSourceId: string]: UISelectInterface[] };
+      entityFields: string[];
     };
     entities: {
       loading: boolean;
@@ -142,6 +143,7 @@ export declare namespace ReduxJson {
     initialized: boolean;
     status: ResponseStatus | null;
     models: { [id: string]: Model };
+    previousModels?: { [id: string]: Model };
     selectedModelId: string | null;
     newModel: Model | null;
   };
