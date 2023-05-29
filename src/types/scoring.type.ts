@@ -105,6 +105,7 @@ export type BarChartDataSet = {
   data: number[];
   borderColor?: string;
   backgroundColor: string;
+  names?: string[];
 };
 
 export type BarChartDataSets = BarChartDataSet[];

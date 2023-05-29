@@ -126,7 +126,24 @@ export const HomeBarChart = ({
   ]);
 
   useEffect(() => {
-    setChartData(barChartData);
+    const { labels, datasets } = barChartData;
+    const newBarchartData = {
+      labels,
+      datasets: datasets.map((dataset) => {
+        const { data } = dataset;
+        return {
+          ...dataset,
+          data: data.map((item: { label: string; value: number } | number) => {
+            if (typeof item === 'number') {
+              return item;
+            } else {
+              return item.value;
+            }
+          }),
+        };
+      }),
+    };
+    setChartData(newBarchartData);
   }, [barChartData]);
 
   const handleChange = (event: SelectChangeEvent<unknown>): void => {

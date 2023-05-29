@@ -26,6 +26,7 @@ import {
   ScoringRankingResult,
   ScoringResult,
   GetPeerAttributeRankingParams,
+  Entity,
 } from '@/types';
 import { ChartData } from 'chart.js';
 import { getColorPair } from '@/libs/color-generator';
@@ -51,6 +52,7 @@ import {
   PeerAttributeData,
 } from '@/types/graph.type';
 import { sum } from 'lodash';
+import { getEntitiesByIdWithMasking } from '@/redux/slices/entity.slice';
 import { genRefreshToken } from '@/libs/auth-token';
 
 const pageLimitDefault: { [pageName: string]: number } = {
@@ -357,9 +359,10 @@ const scoringSlice = createSlice({
             const entitiesRanking: EntityRanking[] = payloadScoring.map(
               (scoring) => {
                 const ranking: ScoringRankingResult = scoring?.ranking;
+                const entityId: string = scoring?.entity?.entityId ?? '';
                 const { ranking: rankingString } = ranking;
                 const entityRanking: EntityRanking = JSON.parse(rankingString);
-                return entityRanking;
+                return { ...entityRanking, entityId };
               }
             );
             state.entityRanking = entitiesRanking;
@@ -695,31 +698,43 @@ export const barChartLabelsSelector = (state: RootState): string[] => {
 
 const barChartDataSetsSelector = (state: RootState): BarChartDataSets => {
   const entityRankingData = state?.scores?.entityRanking ?? [];
+  const entitiesById = getEntitiesByIdWithMasking(state);
 
   const barchartGroupDictionary: { [name: string]: number[] } = {};
+  const namesByCategory: { [name: string]: string[] } = {};
   const backGroundColors: { [name: string]: string } = {};
   entityRankingData.forEach((entity: EntityRanking) => {
-    const { scoringResult } = entity;
+    const { scoringResult, entityId } = entity;
+    const entityDetails: Entity = entitiesById[entityId] ?? null;
     const { attributes: categories } = scoringResult;
     categories.forEach((category: Attribute, index: number) => {
       const { name: categoryName, score: categoryScore } = category;
       const significanceScore = roundToSignificant(categoryScore, 4);
       const roundedScore = returnScore(significanceScore);
+      const entityName = entityDetails?.properties?.name ?? '';
+      const label =
+        !entityDetails.isMasked && entityName !== ''
+          ? (entityName as string)
+          : '';
       if (!(categoryName in barchartGroupDictionary)) {
         barchartGroupDictionary[categoryName] = [roundedScore];
+        namesByCategory[categoryName] = [label];
         const colorPair = getColorPair(index);
         backGroundColors[categoryName] = colorPair.bgColor;
       } else {
         barchartGroupDictionary[categoryName].push(roundedScore);
+        namesByCategory[categoryName].push(label);
       }
     });
   });
   return Object.entries(barchartGroupDictionary).map(([label, data]) => {
     const backgroundColor = backGroundColors[label];
+    const names = namesByCategory[label];
     const dataSet: BarChartDataSet = {
       label,
       data,
       backgroundColor,
+      names,
     };
     return dataSet;
   });
@@ -732,7 +747,7 @@ export const categoriesSelector = (state: RootState): string[] => {
 
 export const barChartDataSelector = (
   state: RootState
-): ChartData<'bar', number[]> => ({
+): ChartData<'bar', ({ value: number; label: string } | number)[]> => ({
   labels: barChartLabelsSelector(state),
   datasets: barChartDataSetsSelector(state),
 });

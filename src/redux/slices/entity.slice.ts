@@ -78,6 +78,7 @@ const initialState: ReduxJson.EntitiesState = {
   status: null,
   entities: {},
   entitiesPending: {},
+  entitiesHaveFailed: {},
   isCommentsInitialized: false,
   isStatusInitialized: false,
   rankingByEntityId: {},
@@ -259,11 +260,13 @@ const entitiesSlice = createSlice({
         state.loading = true;
         const { arg: params } = meta;
         const { entityId } = params;
-        const newEntitiesPending = {
-          ...state.entitiesPending,
-          [entityId]: true,
-        };
-        state.entitiesPending = newEntitiesPending;
+        if (!(entityId in state.entitiesPending)) {
+          const newEntitiesPending = {
+            ...state.entitiesPending,
+            [entityId]: true,
+          };
+          state.entitiesPending = newEntitiesPending;
+        }
         state.initialized = false;
         state.status = ResponseStatus.PENDING;
       })
@@ -282,9 +285,11 @@ const entitiesSlice = createSlice({
             ...state.entities,
             [entityId]: newEntity,
           };
-          const { [entityId]: _value, ...newEntitiesPending } =
-            state.entitiesPending;
-          state.entitiesPending = newEntitiesPending;
+          if (entityId in state.entitiesPending) {
+            const { [entityId]: _value, ...newEntitiesPending } =
+              state.entitiesPending;
+            state.entitiesPending = newEntitiesPending;
+          }
           state.initialized = true;
           state.status = ResponseStatus.SUCCESS;
         }
@@ -293,9 +298,18 @@ const entitiesSlice = createSlice({
         state.loading = false;
         const { arg: params } = meta;
         const { entityId } = params;
-        const { [entityId]: _value, ...newEntitiesPending } =
-          state.entitiesPending;
-        state.entitiesPending = newEntitiesPending;
+        if (entityId in state.entitiesPending) {
+          const { [entityId]: _value, ...newEntitiesPending } =
+            state.entitiesPending;
+          state.entitiesPending = newEntitiesPending;
+        }
+        if (!(entityId in state.entitiesHaveFailed)) {
+          const newEntitiesHaveFailed = {
+            ...state.entitiesHaveFailed,
+            [entityId]: true,
+          };
+          state.entitiesHaveFailed = newEntitiesHaveFailed;
+        }
         state.entities = {};
         state.initialized = true;
         state.status = ResponseStatus.FAILED;
@@ -304,11 +318,13 @@ const entitiesSlice = createSlice({
         state.loading = true;
         const { arg: params } = meta;
         const { entityId } = params;
-        const newEntitiesPending = {
-          ...state.entitiesPending,
-          [entityId]: true,
-        };
-        state.entitiesPending = newEntitiesPending;
+        if (!(entityId in state.entitiesPending)) {
+          const newEntitiesPending = {
+            ...state.entitiesPending,
+            [entityId]: true,
+          };
+          state.entitiesPending = newEntitiesPending;
+        }
         state.initialized = false;
         state.status = ResponseStatus.PENDING;
       })
@@ -327,9 +343,11 @@ const entitiesSlice = createSlice({
             ...state.entities,
             [entityId]: newEntity,
           };
-          const { [entityId]: _value, ...newEntitiesPending } =
-            state.entitiesPending;
-          state.entitiesPending = newEntitiesPending;
+          if (entityId in state.entitiesPending) {
+            const { [entityId]: _value, ...newEntitiesPending } =
+              state.entitiesPending;
+            state.entitiesPending = newEntitiesPending;
+          }
           state.initialized = true;
           state.status = ResponseStatus.SUCCESS;
         }
@@ -338,9 +356,18 @@ const entitiesSlice = createSlice({
         state.loading = false;
         const { arg: params } = meta;
         const { entityId } = params;
-        const { [entityId]: _value, ...newEntitiesPending } =
-          state.entitiesPending;
-        state.entitiesPending = newEntitiesPending;
+        if (entityId in state.entitiesPending) {
+          const { [entityId]: _value, ...newEntitiesPending } =
+            state.entitiesPending;
+          state.entitiesPending = newEntitiesPending;
+        }
+        if (!(entityId in state.entitiesHaveFailed)) {
+          const newEntitiesHaveFailed = {
+            ...state.entitiesHaveFailed,
+            [entityId]: true,
+          };
+          state.entitiesHaveFailed = newEntitiesHaveFailed;
+        }
         state.entities = {};
         state.initialized = true;
         state.status = ResponseStatus.FAILED;
@@ -666,16 +693,23 @@ const entitiesSlice = createSlice({
         state.isCommentsInitialized = true;
         state.status = ResponseStatus.FAILED;
       })
-      .addCase(getEntityStatus.pending, (state) => {
+      .addCase(getEntityStatus.pending, (state, { meta }) => {
         state.loading = true;
+        const { arg: params } = meta;
+        const { entityId } = params;
+        if (!(entityId in state.entitiesPending)) {
+          const newEntitiesPending = {
+            ...state.entitiesPending,
+            [entityId]: true,
+          };
+          state.entitiesPending = newEntitiesPending;
+        }
         state.isStatusInitialized = false;
         state.status = ResponseStatus.PENDING;
       })
       .addCase(
         getEntityStatus.fulfilled,
         (state, { payload }: PayloadAction<EntityReturnStatus>) => {
-          state.loading = false;
-          state.initialized = true;
           const { entityId, entityStatus } = payload;
           if (entityId) {
             const entityIdString = entityId;
@@ -692,11 +726,32 @@ const entitiesSlice = createSlice({
               };
             }
           }
+          if (entityId in state.entitiesPending) {
+            const { [entityId]: _value, ...newEntitiesPending } =
+              state.entitiesPending;
+            state.entitiesPending = newEntitiesPending;
+          }
+          state.loading = false;
+          state.initialized = true;
           state.isStatusInitialized = true;
           state.status = ResponseStatus.SUCCESS;
         }
       )
-      .addCase(getEntityStatus.rejected, (state) => {
+      .addCase(getEntityStatus.rejected, (state, { meta }) => {
+        const { arg: params } = meta;
+        const { entityId } = params;
+        if (entityId in state.entitiesPending) {
+          const { [entityId]: _value, ...newEntitiesPending } =
+            state.entitiesPending;
+          state.entitiesPending = newEntitiesPending;
+        }
+        if (!(entityId in state.entitiesHaveFailed)) {
+          const newEntitiesHaveFailed = {
+            ...state.entitiesHaveFailed,
+            [entityId]: true,
+          };
+          state.entitiesHaveFailed = newEntitiesHaveFailed;
+        }
         state.loading = false;
         state.initialized = true;
         state.isStatusInitialized = true;
@@ -777,6 +832,29 @@ export const hasEntitiesSelector =
     return new Array(entityIds.length).fill(false);
   };
 
+export const needsStatusesEntityIdsSelector = (state: RootState): string[] => {
+  const allEntities: Entity[] = Object.values(state?.entities?.entities ?? {});
+  const entityIds = allEntities
+    .filter((entity: Entity) => (entity?.entityStatus || '') === '')
+    .map((entity: Entity) => entity.entityId);
+  const entityIdsSet: Set<string> = new Set<string>(entityIds);
+  const entitiesPending: Set<string> = new Set<string>(
+    Object.keys(state.entities.entitiesPending)
+  );
+  const entitiesFailed: Set<string> = new Set<string>(
+    Object.keys(state.entities.entitiesHaveFailed)
+  );
+  const entitiesStillExtant: Set<string> = difference<string>(
+    entityIdsSet,
+    entitiesPending
+  );
+  const entitiesNotFailed: Set<string> = difference<string>(
+    entitiesStillExtant,
+    entitiesFailed
+  );
+  return Array.from(entitiesNotFailed);
+};
+
 export const needsEntitiesSelector =
   (entityIds: string[]): ((state: RootState) => string[]) =>
   (state: RootState) => {
@@ -784,9 +862,16 @@ export const needsEntitiesSelector =
     const entitiesPending: Set<string> = new Set<string>(
       Object.keys(state.entities.entitiesPending)
     );
+    const entitiesFailed: Set<string> = new Set<string>(
+        Object.keys(state.entities.entitiesHaveFailed)
+    );
     const entitiesStillExtant: Set<string> = difference<string>(
       entityIdsSet,
       entitiesPending
+    );
+    const entitiesNotFailed: Set<string> = difference<string>(
+        entitiesStillExtant,
+        entitiesFailed
     );
     if (entityIds && entityIds.length > 0) {
       if (state.entities.entities) {
@@ -794,13 +879,13 @@ export const needsEntitiesSelector =
           Object.keys(state.entities.entities)
         );
         const setDifference: Set<string> = difference<string>(
-          entitiesStillExtant,
+          entitiesNotFailed,
           stateEntities
         );
         return Array.from(setDifference);
       }
     }
-    return Array.from(entitiesStillExtant);
+    return Array.from(entitiesNotFailed);
   };
 
 const transformProperties =
@@ -917,6 +1002,10 @@ export const getEntitiesByIdWithMasking = (
   if (entities) {
     Object.entries(entities).forEach(
       ([entityId, entity]: [entityid: string, entity: Entity]) => {
+        const entityStatus =
+          entity && entity.entityStatus
+            ? entity.entityStatus
+            : ENTITY_STATUS_NEW;
         const maskedEntityStatus: string =
           getMaskedEntityStatusSelector(entityId)(state);
         const maskedEntityIcon: string =
@@ -957,7 +1046,7 @@ export const getEntitiesByIdWithMasking = (
         });
         const newEntity: Entity = {
           ...entity,
-          properties: maskedProperties,
+          properties: { ...maskedProperties, status: entityStatus },
           isMasked:
             isMaskingOn &&
             existsPropertyMasked &&

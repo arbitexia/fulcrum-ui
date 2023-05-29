@@ -62,6 +62,8 @@ import {
   isGovernanceSystemMaskingInitializedSelector,
   isGovernanceEntitiestoMaskInitializedSelector,
   retrieveMaskings,
+  getIsEntityStatusInitialized,
+  getEntityStatus,
 } from '@/redux/slices';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -86,10 +88,12 @@ import {
 import {
   ENTITY_STATUS_CASE_OPENED,
   ENTITY_STATUS_REVIEWED,
+  needsStatusesEntityIdsSelector,
 } from '@/redux/slices/entity.slice';
 import { roundScore } from '@/libs/math-utils';
 import { getScoreColor } from '@/libs/color-generator';
 import { readCookie, writeCookie } from '@/libs/cookie-utils';
+import { QueryEntityStatusParams } from '@/types/entity.type';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
@@ -167,6 +171,12 @@ const HomePage = (): JSX.Element => {
   );
   const homePageTopPercent = useAppSelector(getHomePageTopPercent);
   const numberTopRiskIndicators = useAppSelector(getNumberTopRiskIndicators);
+  const entityStatusentityIdsNeeded = useAppSelector(
+    needsStatusesEntityIdsSelector
+  );
+  const isEntityStatusInitialized = useAppSelector(
+    getIsEntityStatusInitialized
+  );
   const [innerModelId, setInnerModelId] = useState<string | null>(null);
   const [originalCategories, setOriginalCategories] = useState<string[]>([]);
   const [originalCategoriesSet, setOriginalCategoriesSet] =
@@ -505,6 +515,43 @@ const HomePage = (): JSX.Element => {
       );
     }
   }, [cookieAccessToken, isGovernanceEntitiestoMaskInitialized, dispatch]);
+
+  const dispatchQueryEntityStatus = useCallback(
+    (args: QueryEntityStatusParams): Promise<void> => {
+      return new Promise<void>((resolve) => {
+        dispatch(
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          getEntityStatus(args)
+        );
+        resolve();
+      });
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    if (
+      cookieAccessToken &&
+      (!isEntityStatusInitialized ||
+        (entityStatusentityIdsNeeded && entityStatusentityIdsNeeded.length > 0))
+    ) {
+      const getEntityStatusesPromises = entityStatusentityIdsNeeded.map(
+        (entityId) => {
+          return dispatchQueryEntityStatus({
+            accessToken: cookieAccessToken,
+            entityId,
+          });
+        }
+      );
+      Promise.all(getEntityStatusesPromises).then(noop);
+    }
+  }, [
+    cookieAccessToken,
+    entityStatusentityIdsNeeded,
+    isEntityStatusInitialized,
+    dispatchQueryEntityStatus,
+  ]);
 
   if (!cookieAccessToken) {
     return <LinearProgress />;

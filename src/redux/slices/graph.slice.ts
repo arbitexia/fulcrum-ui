@@ -149,7 +149,13 @@ export const peerChartDataSelector = (
   state: RootState
 ): ChartData<
   'bar',
-  (number | ScatterDataPoint | BubbleDataPoint | null)[]
+  (
+    | { value: number; label: string }
+    | number
+    | ScatterDataPoint
+    | BubbleDataPoint
+    | null
+  )[]
 > => ({
   labels: peerChartLabelsSelector(state),
   datasets: peerChartDataSetsSelector(state),
@@ -206,7 +212,13 @@ export const graphChartDataSelector = (
   state: RootState
 ): ChartData<
   'line',
-  (number | ScatterDataPoint | BubbleDataPoint | null)[]
+  (
+    | { label: string; value: number }
+    | number
+    | ScatterDataPoint
+    | BubbleDataPoint
+    | null
+  )[]
 > => ({
   labels: graphChartLabelsSelector(state),
   datasets: graphChartDataSetsSelector(state),

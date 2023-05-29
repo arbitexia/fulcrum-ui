@@ -124,7 +124,13 @@ export const GraphChartModal = ({
   const { id: entityId = '' } = query as { id: string };
   const graphChartData: ChartData<
     'line',
-    (number | ScatterDataPoint | BubbleDataPoint | null)[]
+    (
+      | { label: string; value: number }
+      | number
+      | ScatterDataPoint
+      | BubbleDataPoint
+      | null
+    )[]
   > = useAppSelector(graphChartDataSelector) || null;
   const graphData: GraphDataType[] =
     useAppSelector(getGraphDataSelector) || null;
@@ -132,7 +138,16 @@ export const GraphChartModal = ({
     useState<GraphDataType[]>(graphData);
   const [chartData, setChartData] =
     useState<
-      ChartData<'line', (number | ScatterDataPoint | BubbleDataPoint | null)[]>
+      ChartData<
+        'line',
+        (
+          | { label: string; value: number }
+          | number
+          | ScatterDataPoint
+          | BubbleDataPoint
+          | null
+        )[]
+      >
     >(graphChartData);
 
   useEffect(() => {

@@ -892,13 +892,27 @@ export const getPeerChartData =
     state: RootState
   ) => ChartData<
     'bar',
-    (number | ScatterDataPoint | BubbleDataPoint | BarChartDataSet | null)[]
+    (
+      | { label: string; value: number }
+      | number
+      | ScatterDataPoint
+      | BubbleDataPoint
+      | BarChartDataSet
+      | null
+    )[]
   >) =>
   (
     state: RootState
   ): ChartData<
     'bar',
-    (number | ScatterDataPoint | BubbleDataPoint | BarChartDataSet | null)[]
+    (
+      | { label: string; value: number }
+      | number
+      | ScatterDataPoint
+      | BubbleDataPoint
+      | BarChartDataSet
+      | null
+    )[]
   > => {
     const peerCompareData: {
       label: string;
