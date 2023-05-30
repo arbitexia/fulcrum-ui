@@ -67,11 +67,25 @@ export const barChartOptions: _DeepPartialObject<unknown> = {
     tooltip: {
       callbacks: {
         label: (tooltipItem: TooltipItem<'bar'>) => {
-          const { y } = tooltipItem.parsed;
+          const { dataIndex, dataset, parsed } = tooltipItem;
+          const { y } = parsed;
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          const names: string[] = dataset?.names ?? null;
+          if (names && names.length > 0) {
+            const name = names[dataIndex];
+            if (name) {
+              return `${name} - ${Math.round(y)}`;
+            }
+          }
           return Math.round(y);
         },
-        title: (_toolTipItem: TooltipItem<'bar'>) => {
-          return;
+        title: (toolTipItem: TooltipItem<'bar'>[]) => {
+          if (toolTipItem && toolTipItem.length > 0) {
+            const { dataset } = toolTipItem[0];
+            return dataset.label;
+          }
+          return '';
         },
       },
     },

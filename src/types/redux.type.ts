@@ -171,6 +171,7 @@ export declare namespace ReduxJson {
     status: ResponseStatus | null;
     entities: { [id: string]: Entity };
     entitiesPending: { [id: string]: boolean };
+    entitiesHaveFailed: { [id: string]: boolean };
     isCommentsInitialized: boolean;
     isStatusInitialized: boolean;
     rankingByEntityId: { [id: string]: EntityRanking };

@@ -19,7 +19,7 @@ import {
 } from '@/types';
 import { listApi } from '@/redux/apis';
 import { AxiosError } from 'axios';
-import { genRefreshToken } from '@/libs/auth-token';
+import { isAccessTokenValid } from '@/libs/auth-token';
 
 const initialState: ReduxJson.ListsState = {
   loading: false,
@@ -37,11 +37,11 @@ export const retrieveLists = createAsyncThunk<
 >('list/retrieveLists', async (params: RetrieveListsParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await listApi.loadLists(params);
   } catch (error) {
     const err = error as AxiosError;
     return thunkAPI.rejectWithValue(err.response?.data);
-    await genRefreshToken(err);
   }
 });
 
@@ -52,11 +52,11 @@ export const retrieveList = createAsyncThunk<
 >('list/retrieveList', async (params: RetrieveListParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await listApi.loadList(params);
   } catch (error) {
     const err = error as AxiosError;
     return thunkAPI.rejectWithValue(err.response?.data);
-    await genRefreshToken(err);
   }
 });
 
@@ -67,11 +67,11 @@ export const newList = createAsyncThunk<
 >('list/newList', async (params: NewListParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     await listApi.newList(params);
     return;
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -83,11 +83,11 @@ export const deleteList = createAsyncThunk<
 >('list/deleteList', async (params: DeleteListParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await listApi.deleteList(params);
   } catch (error) {
     const err = error as AxiosError;
     return thunkAPI.rejectWithValue(err.response?.data);
-    await genRefreshToken(err);
   }
 });
 

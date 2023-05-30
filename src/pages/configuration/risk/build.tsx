@@ -41,12 +41,12 @@ import {
 import { AppDispatch } from '@/redux/store';
 import { useRouter } from 'next/router';
 import { CircularProgress, LinearProgress } from '@mui/material';
-import { useCookies } from 'react-cookie';
 import config from '@/config';
 import { noop } from 'lodash';
 import { getDataSourceStats } from '@/redux/slices/stat.slice';
 import { EditValueModal } from '@/modules/Models/BuildRisk/EditValueModal';
 import { EditValueItemProps } from '@/types/common.type';
+import { readCookie } from '@/libs/cookie-utils';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
@@ -54,7 +54,6 @@ const Build = (): JSX.Element => {
   const router = useRouter();
   const dispatch: AppDispatch = useAppDispatch();
   const { isReady } = router as { isReady: boolean };
-  const [cookies] = useCookies(['accessToken']);
   const riskItemSelected = useAppSelector(newAttributeSelector);
   const [openHistory, setOpenHistory] = useState<boolean>(false);
   const [openHistory2, setOpenHistory2] = useState<boolean>(false);
@@ -96,9 +95,7 @@ const Build = (): JSX.Element => {
   const riskFieldId2 = riskItemRiskFieldId2 || defaultRiskFieldId;
   const statsInitialized = useAppSelector(getStatsInitialized);
   const statsPending = useAppSelector(isStatsStatusPending);
-  const { accessToken: cookieAccessToken = null } = cookies as {
-    accessToken?: string | null;
-  };
+  const cookieAccessToken = readCookie('accessToken');
 
   useEffect(() => {
     if (isReady) {

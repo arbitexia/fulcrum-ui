@@ -13,7 +13,6 @@ import { persistStore } from 'redux-persist';
 import { PersistGate } from 'redux-persist/integration/react';
 import { wrapper, createStore } from '@/redux/store';
 import { AppThemeProvider, AppToastProvider } from '@/providers';
-import { CookiesProvider } from 'react-cookie';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 
@@ -22,15 +21,13 @@ const RedVectorApp = ({ Component, pageProps }: AppProps): JSX.Element => {
   return (
     <AppThemeProvider>
       <AppToastProvider>
-        <CookiesProvider>
-          <LocalizationProvider dateAdapter={AdapterMoment}>
-            <Provider store={store}>
-              <PersistGate loading={null} persistor={persistStore(store)}>
-                <Component {...pageProps} />
-              </PersistGate>
-            </Provider>
-          </LocalizationProvider>
-        </CookiesProvider>
+        <LocalizationProvider dateAdapter={AdapterMoment}>
+          <Provider store={store}>
+            <PersistGate loading={null} persistor={persistStore(store)}>
+              <Component {...pageProps} />
+            </PersistGate>
+          </Provider>
+        </LocalizationProvider>
       </AppToastProvider>
     </AppThemeProvider>
   );

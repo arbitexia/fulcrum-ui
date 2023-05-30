@@ -7,45 +7,23 @@
  * Author: Ritesh Patel
  */
 import { authApi } from '@/redux/apis';
+import { readCookie, writeCookie } from './cookie-utils';
 import jwt_decode, { JwtPayload } from 'jwt-decode';
-import { AccessTokenType } from '@/types';
-import { AxiosError } from 'axios';
 
-const writeCookie = (
-  name: string,
-  value: string,
-  date: Date | string | null
-): void => {
-  if (typeof window === 'undefined') return;
-  const expirey = date instanceof Date ? '; expires=' + date : null;
-  const cookie = [
-    name,
-    '=',
-    JSON.stringify(value),
-    '; domain_.',
-    window.location.host.toString(),
-    '; path=/;',
-    expirey,
-  ].join('');
-  document.cookie = cookie;
-};
-
-const readCookie = (name: string): string | string[] | null => {
-  let result: RegExpMatchArray | string | string[] | null =
-    document.cookie.match(new RegExp(name + '=([^;]+)'));
-  result = result != undefined ? result[1] : [];
-  return result;
-};
-
-export const genRefreshToken = async (err: AxiosError) => {
+export const isAccessTokenValid = async (): Promise<void> => {
   try {
-    if (err.response?.status === 401) {
-      const refreshToken = readCookie('refreshToken');
+    const accessToken = readCookie('accessToken');
+    const refreshToken = readCookie('refreshToken');
+    const decoded: JwtPayload = jwt_decode(accessToken as string);
+    const expirationTime = decoded.exp as number;
+    const currentTime = Date.now() / 1000;
+    const isExpired = expirationTime < currentTime;
+    if (isExpired) {
       const result = await authApi.refreshToken({
         refreshToken: refreshToken as string,
       });
-      writeCookie('accessToken', result?.accessToken ?? '', new Date());
-      writeCookie('refreshToken', result?.refreshToken ?? '', new Date());
+      writeCookie('accessToken', result?.accessToken ?? '');
+      writeCookie('refreshToken', result?.refreshToken ?? '');
     }
   } catch (error) {
     throw new Error('Authentication failed');

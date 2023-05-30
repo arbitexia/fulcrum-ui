@@ -50,7 +50,14 @@ export const PeerChartModal = ({
   const peerGroupId: string | null = useAppSelector(getPeerGroupId(modelId));
   const peerChartData: ChartData<
     'bar',
-    (number | ScatterDataPoint | BubbleDataPoint | BarChartDataSet | null)[]
+    (
+      | { label: string; value: number }
+      | number
+      | ScatterDataPoint
+      | BubbleDataPoint
+      | BarChartDataSet
+      | null
+    )[]
   > =
     useAppSelector(getPeerChartData(modelId, entityId, categoryIndex)) || null;
 

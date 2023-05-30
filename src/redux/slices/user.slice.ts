@@ -11,7 +11,7 @@ import { RootState, AppDispatch } from '@/redux/store';
 import { ReduxJson, ResponseStatus, UserJson } from '@/types';
 import { userApi } from '@/redux/apis';
 import { AxiosError } from 'axios';
-import { genRefreshToken } from '@/libs/auth-token';
+import { isAccessTokenValid } from '@/libs/auth-token';
 
 const initialState: ReduxJson.UserState = {
   users: {
@@ -30,10 +30,10 @@ export const retrieveUsers = createAsyncThunk<
 >('users/retrieveUsers', async (params, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await userApi.loadUsers(params);
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });

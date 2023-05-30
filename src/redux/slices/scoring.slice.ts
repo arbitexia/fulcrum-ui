@@ -26,6 +26,7 @@ import {
   ScoringRankingResult,
   ScoringResult,
   GetPeerAttributeRankingParams,
+  Entity,
 } from '@/types';
 import { ChartData } from 'chart.js';
 import { getColorPair } from '@/libs/color-generator';
@@ -51,7 +52,8 @@ import {
   PeerAttributeData,
 } from '@/types/graph.type';
 import { sum } from 'lodash';
-import { genRefreshToken } from '@/libs/auth-token';
+import { getEntitiesByIdWithMasking } from '@/redux/slices/entity.slice';
+import { isAccessTokenValid } from '@/libs/auth-token';
 
 const pageLimitDefault: { [pageName: string]: number } = {
   homePage: 25,
@@ -97,6 +99,7 @@ export const retrieveScores = createAsyncThunk<
 >('scores/retrieveScores', async (params: RetrieveScoringParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     if (params.requestType && !params.categories) {
       return await scoresDataApi.loadScoresData(params);
     } else {
@@ -104,7 +107,6 @@ export const retrieveScores = createAsyncThunk<
     }
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -118,6 +120,7 @@ export const retrieveScoresCount = createAsyncThunk<
   async (params: RetrieveScoringCountParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
+      await isAccessTokenValid();
       if (params.requestType && !params.categories) {
         return await scoresDataApi.loadScoresCountData(params);
       } else {
@@ -125,7 +128,6 @@ export const retrieveScoresCount = createAsyncThunk<
       }
     } catch (error) {
       const err = error as AxiosError;
-      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -138,10 +140,10 @@ export const retrieveBasis = createAsyncThunk<
 >('scores/retrieveBasis', async (params: RetrieveBasisParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await scoresDataApi.loadBasisData(params);
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -155,10 +157,10 @@ export const retrieveBasisCount = createAsyncThunk<
   async (params: RetrieveBasisCountParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
+      await isAccessTokenValid();
       return await scoresDataApi.loadBasisCountData(params);
     } catch (error) {
       const err = error as AxiosError;
-      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -173,10 +175,10 @@ export const retrieveScoresForEntity = createAsyncThunk<
   async (params: RetrieveScoresForEntityParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
+      await isAccessTokenValid();
       return await scoresDataApi.loadScoresForEntityData(params);
     } catch (error) {
       const err = error as AxiosError;
-      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -191,10 +193,10 @@ export const retrieveGroupHash = createAsyncThunk<
   async (params: GetPeerGroupRankingParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
+      await isAccessTokenValid();
       return await scoresDataApi.loadPeerGroupHashRankingData(params);
     } catch (error) {
       const err = error as AxiosError;
-      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -209,10 +211,10 @@ export const retrieveHistoricalGroupHashes = createAsyncThunk<
   async (params: GetPeerGroupHistoricalRankingParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
+      await isAccessTokenValid();
       return await scoresDataApi.loadPeerGroupHistoricalData(params);
     } catch (error) {
       const err = error as AxiosError;
-      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -227,10 +229,10 @@ export const retrievePeerAttributeData = createAsyncThunk<
   async (params: GetPeerAttributeRankingParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
+      await isAccessTokenValid();
       return await scoresDataApi.loadPeerAttributeRankingData(params);
     } catch (error) {
       const err = error as AxiosError;
-      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -245,10 +247,10 @@ export const retrieveHistoricalDataForModelAndEntity = createAsyncThunk<
   async (params: RetrieveHistoricalScoreDataForEntityParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
+      await isAccessTokenValid();
       return await scoresDataApi.loadHistoricalDataForEntity(params);
     } catch (error) {
       const err = error as AxiosError;
-      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }
@@ -357,9 +359,10 @@ const scoringSlice = createSlice({
             const entitiesRanking: EntityRanking[] = payloadScoring.map(
               (scoring) => {
                 const ranking: ScoringRankingResult = scoring?.ranking;
+                const entityId: string = scoring?.entity?.entityId ?? '';
                 const { ranking: rankingString } = ranking;
                 const entityRanking: EntityRanking = JSON.parse(rankingString);
-                return entityRanking;
+                return { ...entityRanking, entityId };
               }
             );
             state.entityRanking = entitiesRanking;
@@ -695,31 +698,43 @@ export const barChartLabelsSelector = (state: RootState): string[] => {
 
 const barChartDataSetsSelector = (state: RootState): BarChartDataSets => {
   const entityRankingData = state?.scores?.entityRanking ?? [];
+  const entitiesById = getEntitiesByIdWithMasking(state);
 
   const barchartGroupDictionary: { [name: string]: number[] } = {};
+  const namesByCategory: { [name: string]: string[] } = {};
   const backGroundColors: { [name: string]: string } = {};
   entityRankingData.forEach((entity: EntityRanking) => {
-    const { scoringResult } = entity;
+    const { scoringResult, entityId } = entity;
+    const entityDetails: Entity = entitiesById[entityId] ?? null;
     const { attributes: categories } = scoringResult;
     categories.forEach((category: Attribute, index: number) => {
       const { name: categoryName, score: categoryScore } = category;
       const significanceScore = roundToSignificant(categoryScore, 4);
       const roundedScore = returnScore(significanceScore);
+      const entityName = entityDetails?.properties?.name ?? '';
+      const label =
+        !entityDetails.isMasked && entityName !== ''
+          ? (entityName as string)
+          : '';
       if (!(categoryName in barchartGroupDictionary)) {
         barchartGroupDictionary[categoryName] = [roundedScore];
+        namesByCategory[categoryName] = [label];
         const colorPair = getColorPair(index);
         backGroundColors[categoryName] = colorPair.bgColor;
       } else {
         barchartGroupDictionary[categoryName].push(roundedScore);
+        namesByCategory[categoryName].push(label);
       }
     });
   });
   return Object.entries(barchartGroupDictionary).map(([label, data]) => {
     const backgroundColor = backGroundColors[label];
+    const names = namesByCategory[label];
     const dataSet: BarChartDataSet = {
       label,
       data,
       backgroundColor,
+      names,
     };
     return dataSet;
   });
@@ -732,7 +747,7 @@ export const categoriesSelector = (state: RootState): string[] => {
 
 export const barChartDataSelector = (
   state: RootState
-): ChartData<'bar', number[]> => ({
+): ChartData<'bar', ({ value: number; label: string } | number)[]> => ({
   labels: barChartLabelsSelector(state),
   datasets: barChartDataSetsSelector(state),
 });

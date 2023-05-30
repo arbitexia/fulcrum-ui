@@ -116,7 +116,14 @@ const PeerChart = ({
 }: {
   chartData: ChartData<
     'bar',
-    (number | ScatterDataPoint | BubbleDataPoint | BarChartDataSet | null)[],
+    (
+      | { label: string; value: number }
+      | number
+      | ScatterDataPoint
+      | BubbleDataPoint
+      | BarChartDataSet
+      | null
+    )[],
     unknown
   >;
   chartDataSets: PeerDataType[];

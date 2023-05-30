@@ -30,6 +30,7 @@
     "eslint-import-resolver-typescript": "^3.5.1",
     "eslint-plugin-notice": "^0.9.10",
     "formik": "^2.2.9",
+    "js-cookie": "^3.0.5",
     "jwt-decode": "^3.1.2",
     "loader-utils": "2.0.4",
     "lodash": "^4.17.21",
@@ -41,7 +42,6 @@
     "react": "18.2.0",
     "react-apexcharts": "^1.4.0",
     "react-chartjs-2": "^4.3.1",
-    "react-cookie": "^4.1.1",
     "react-dom": "18.2.0",
     "react-redux": "^8.0.2",
     "redux-persist": "^6.0.0",
@@ -50,6 +50,7 @@
   "devDependencies": {
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
+    "@types/js-cookie": "^3.0.3",
     "@types/lodash": "^4.14.184",
     "@types/node": "18.6.3",
     "@types/react": "18.0.15",

@@ -9,18 +9,15 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import config from '@/config';
-import { useCookies } from 'react-cookie';
 import { noop } from 'lodash';
 import { LinearProgress } from '@mui/material';
+import { readCookie } from '@/libs/cookie-utils';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
 const Home = (): JSX.Element => {
   const router = useRouter();
-  const [cookies] = useCookies(['accessToken']);
-  const { accessToken: cookieAccessToken = null } = cookies as {
-    accessToken?: string | null;
-  };
+  const cookieAccessToken = readCookie('accessToken');
   const { isReady } = router as {
     query: { accessToken?: string | null };
     isReady: boolean;

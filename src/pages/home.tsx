@@ -62,6 +62,8 @@ import {
   isGovernanceSystemMaskingInitializedSelector,
   isGovernanceEntitiestoMaskInitializedSelector,
   retrieveMaskings,
+  getIsEntityStatusInitialized,
+  getEntityStatus,
 } from '@/redux/slices';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -73,8 +75,6 @@ import {
   getScoringCount,
   getSelectedCategoriesSelector,
 } from '@/redux/slices/scoring.slice';
-import { useCookies } from 'react-cookie';
-import { addHours } from '@/libs/time-utils';
 import {
   getGlobalStatsByStatus,
   getGlobalStatsInitializedByStatus,
@@ -88,16 +88,18 @@ import {
 import {
   ENTITY_STATUS_CASE_OPENED,
   ENTITY_STATUS_REVIEWED,
+  needsStatusesEntityIdsSelector,
 } from '@/redux/slices/entity.slice';
 import { roundScore } from '@/libs/math-utils';
 import { getScoreColor } from '@/libs/color-generator';
+import { readCookie, writeCookie } from '@/libs/cookie-utils';
+import { QueryEntityStatusParams } from '@/types/entity.type';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
 const HomePage = (): JSX.Element => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const [cookies, setCookie] = useCookies(['accessToken', 'refreshToken']);
   const { query, isReady } = router as {
     query: AccessTokenType;
     isReady: boolean;
@@ -129,7 +131,7 @@ const HomePage = (): JSX.Element => {
   const isRiskIndicatorConfigInitialized = useAppSelector(
     getRiskIndicatorsConfigInitialized
   );
-  const { accessToken: cookieAccessToken = null } = cookies as AccessTokenType;
+  const cookieAccessToken = readCookie('accessToken');
   const categories = useAppSelector(categoriesSelector);
   const selectedCategories: string[] = useAppSelector(
     getSelectedCategoriesSelector
@@ -169,6 +171,12 @@ const HomePage = (): JSX.Element => {
   );
   const homePageTopPercent = useAppSelector(getHomePageTopPercent);
   const numberTopRiskIndicators = useAppSelector(getNumberTopRiskIndicators);
+  const entityStatusentityIdsNeeded = useAppSelector(
+    needsStatusesEntityIdsSelector
+  );
+  const isEntityStatusInitialized = useAppSelector(
+    getIsEntityStatusInitialized
+  );
   const [innerModelId, setInnerModelId] = useState<string | null>(null);
   const [originalCategories, setOriginalCategories] = useState<string[]>([]);
   const [originalCategoriesSet, setOriginalCategoriesSet] =
@@ -204,10 +212,8 @@ const HomePage = (): JSX.Element => {
           )
           .then(noop);
       } else if (!cookieAccessToken && queryAccessToken) {
-        setCookie('accessToken', queryAccessToken, {
-          expires: addHours(new Date(), 1),
-        });
-        setCookie('refreshToken', queryRefreshToken);
+        writeCookie('accessToken', queryAccessToken);
+        writeCookie('refreshToken', queryRefreshToken ?? '');
       }
     }
   }, [
@@ -217,7 +223,6 @@ const HomePage = (): JSX.Element => {
     queryRefreshToken,
     router,
     dispatch,
-    setCookie,
   ]);
 
   useEffect(() => {
@@ -510,6 +515,43 @@ const HomePage = (): JSX.Element => {
       );
     }
   }, [cookieAccessToken, isGovernanceEntitiestoMaskInitialized, dispatch]);
+
+  const dispatchQueryEntityStatus = useCallback(
+    (args: QueryEntityStatusParams): Promise<void> => {
+      return new Promise<void>((resolve) => {
+        dispatch(
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          getEntityStatus(args)
+        );
+        resolve();
+      });
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    if (
+      cookieAccessToken &&
+      (!isEntityStatusInitialized ||
+        (entityStatusentityIdsNeeded && entityStatusentityIdsNeeded.length > 0))
+    ) {
+      const getEntityStatusesPromises = entityStatusentityIdsNeeded.map(
+        (entityId) => {
+          return dispatchQueryEntityStatus({
+            accessToken: cookieAccessToken,
+            entityId,
+          });
+        }
+      );
+      Promise.all(getEntityStatusesPromises).then(noop);
+    }
+  }, [
+    cookieAccessToken,
+    entityStatusentityIdsNeeded,
+    isEntityStatusInitialized,
+    dispatchQueryEntityStatus,
+  ]);
 
   if (!cookieAccessToken) {
     return <LinearProgress />;

@@ -45,7 +45,7 @@ import {
   getDefaultFilterIdForUISelector,
 } from '@/redux/slices';
 import { useAppDispatch, useAppSelector } from '@/hooks';
-import { AccessTokenType, DeleteListParams, List, Model, RiskIndicatorType } from '@/types';
+import { DeleteListParams, List, Model, RiskIndicatorType } from '@/types';
 import { noop } from 'lodash';
 import {
   clearAttributeMessage,
@@ -66,10 +66,10 @@ import { DeleteConfirmModal } from '@/modules/Models/DeleteModal';
 import { DeleteStatParams } from '@/types/stats.type';
 import { setSelectedFilterId } from '@/redux/slices/filters.slice';
 import config from '@/config';
-import { useCookies } from 'react-cookie';
 import { fullRun } from '@/redux/slices/control.slice';
 import { useAppToast } from '@/providers';
 import { ErrorModal } from '@/modules/Models/ErrorModal';
+import { readCookie } from '@/libs/cookie-utils';
 import { setDefaultFilterId } from '@/redux/slices/model.slice';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
@@ -196,7 +196,6 @@ const Models = (): JSX.Element => {
     isReady: boolean;
   };
   const { type: activeTab } = query as { type: string };
-  const [cookies] = useCookies(['accessToken']);
   const dispatch: AppDispatch = useAppDispatch();
   const modelsInput = useAppSelector(modelsSelector);
   const attributesInput = useAppSelector(attributesSelector);
@@ -208,13 +207,11 @@ const Models = (): JSX.Element => {
   const hasDeleteAttributemessage = useAppSelector(
     getHasDeleteAttributeMessage
   );
+  const cookieAccessToken = readCookie('accessToken');
   const filterFieldData = useAppSelector(getEntityFilterValues);
   const defaultFilterId: Filter['filterId'] = useAppSelector(
     getDefaultFilterIdForUISelector
   );
-  const { accessToken: cookieAccessToken = null } = cookies as {
-    accessToken?: string | null;
-  };
   const [value, setValue] = useState<number>(0);
   const [models, setModels] = useState<Model[]>(modelsInput);
   const [attributes, setAttributes] =

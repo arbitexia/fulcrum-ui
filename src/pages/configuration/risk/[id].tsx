@@ -36,12 +36,12 @@ import attributeTypeToComponent, {
 import BuildRiskNavbar from '@/modules/Models/BuildRisk/BuildRiskNavBar';
 import { riskValues } from '@/_mock/models.mock';
 import { LinearProgress } from '@mui/material';
-import { useCookies } from 'react-cookie';
 import config from '@/config';
 import { noop } from 'lodash';
 import { getDataSourceStats } from '@/redux/slices/stat.slice';
 import { EditValueItemProps } from '@/types/common.type';
 import { EditValueModal } from '@/modules/Models/BuildRisk/EditValueModal';
+import { readCookie } from '@/libs/cookie-utils';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
@@ -53,7 +53,6 @@ const Build = (): JSX.Element => {
     isReady: boolean;
   };
   const { id: attributeId = '' } = query as { id: string };
-  const [cookies] = useCookies(['accessToken']);
   const attribute: RiskIndicatorType | null =
     useAppSelector(attributeByIdSelector(attributeId)) || null;
   const isListsInitialized = useAppSelector(getListsInitialized);
@@ -88,9 +87,7 @@ const Build = (): JSX.Element => {
   );
   const statsInitialized = useAppSelector(getStatsInitialized);
   const statsPending = useAppSelector(isStatsStatusPending);
-  const { accessToken: cookieAccessToken = null } = cookies as {
-    accessToken?: string | null;
-  };
+  const cookieAccessToken = readCookie('accessToken');
 
   useEffect(() => {
     if (isReady) {

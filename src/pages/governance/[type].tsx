@@ -16,7 +16,6 @@ import { UIContainer, UITabWrapper } from '@/components/UI';
 import { DashboardLayout } from '@/layouts';
 import GovernancesNavbar from '@/modules/Governances/GovernancesNavbar';
 import GovernancesTab from '@/modules/Governances/GovernancesTab';
-import { useCookies } from 'react-cookie';
 import config from '@/config';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import {
@@ -43,6 +42,7 @@ import {
   isEntityStatusFailed,
 } from '@/redux/slices';
 import { GetEntityParams } from '@/types';
+import { readCookie } from '@/libs/cookie-utils';
 
 const baseAuthenticationUrl: string = config.URLS.AUTHENTICATION || '';
 
@@ -65,10 +65,7 @@ const Models = (): JSX.Element => {
   const theme = useTheme();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const [cookies] = useCookies(['accessToken']);
-  const { accessToken: cookieAccessToken = null } = cookies as {
-    accessToken?: string | null;
-  };
+  const cookieAccessToken = readCookie('accessToken');
   const { query, isReady } = router as {
     query: { type?: string };
     isReady: boolean;
