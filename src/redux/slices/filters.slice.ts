@@ -20,7 +20,7 @@ import {
   FiltersBackend,
   FiltersJsonParsed,
 } from '@/types/models.type';
-import { genRefreshToken } from '@/libs/auth-token';
+import { isAccessTokenValid } from '@/libs/auth-token';
 import { UISelectInterface } from '@/types/common.type';
 import { keyComparator } from '@/libs/sort-utils';
 
@@ -41,10 +41,10 @@ export const retrieveFilters = createAsyncThunk<
   async (params: RetrieveFiltersParams, thunkAPI) => {
     try {
       // TODO - define the api auth token
+      await isAccessTokenValid();
       return await filterApi.loadFiltersData(params);
     } catch (error) {
       const err = error as AxiosError;
-      await genRefreshToken(err);
       return thunkAPI.rejectWithValue(err.response?.data);
     }
   }

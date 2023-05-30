@@ -50,7 +50,7 @@ import { getColorPair } from '@/libs/color-generator';
 import { roundScoreIntelligently, roundToSignificant } from '@/libs/math-utils';
 import { formatDate } from '@/libs/time-utils';
 import { keyComparator, stableSort } from '@/libs/sort-utils';
-import { genRefreshToken } from '@/libs/auth-token';
+import { isAccessTokenValid } from '@/libs/auth-token';
 
 const keysToObjects: { [id: string]: StateCardItemType } = {
   numEntities: {
@@ -141,10 +141,10 @@ export const getLatestStat = createAsyncThunk<
 >('stats/getLatestStat', async (params: GetLatestStatParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await statsApi.loadLatestStatData(params);
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -156,10 +156,10 @@ export const deleteStats = createAsyncThunk<
 >('stats/deleteStats', async (params: DeleteStatParams, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await statsApi.deleteStatData(params);
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });

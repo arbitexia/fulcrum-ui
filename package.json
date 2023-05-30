@@ -31,6 +31,7 @@
     "eslint-plugin-notice": "^0.9.10",
     "formik": "^2.2.9",
     "js-cookie": "^3.0.5",
+    "jwt-decode": "^3.1.2",
     "loader-utils": "2.0.4",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",

@@ -7,13 +7,18 @@
  * Author: Ritesh Patel
  */
 import { authApi } from '@/redux/apis';
-import { AxiosError } from 'axios';
 import { readCookie, writeCookie } from './cookie-utils';
+import jwt_decode, { JwtPayload } from 'jwt-decode';
 
-export const genRefreshToken = async (err: AxiosError): Promise<void> => {
+export const isAccessTokenValid = async (): Promise<void> => {
   try {
-    if (err.response?.status === 401) {
-      const refreshToken = readCookie('refreshToken');
+    const accessToken = readCookie('accessToken');
+    const refreshToken = readCookie('refreshToken');
+    const decoded: JwtPayload = jwt_decode(accessToken as string);
+    const expirationTime = decoded.exp as number;
+    const currentTime = Date.now() / 1000;
+    const isExpired = expirationTime < currentTime;
+    if (isExpired) {
       const result = await authApi.refreshToken({
         refreshToken: refreshToken as string,
       });

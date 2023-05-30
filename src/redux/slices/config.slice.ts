@@ -24,7 +24,7 @@ import {
   RiskIndicatorConfig,
 } from '@/types/config.type';
 import { keyComparator } from '@/libs/sort-utils';
-import { genRefreshToken } from '@/libs/auth-token';
+import { isAccessTokenValid } from '@/libs/auth-token';
 import { UISelectInterface } from '@/types/common.type';
 import { formatKey } from '@/libs/string-utils';
 
@@ -68,10 +68,10 @@ export const retrieveDataSources = createAsyncThunk<
 >('config/retrieveDataSources', async (params, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await configApi.loadDataSourceConfig(params);
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -83,10 +83,10 @@ export const retrieveEntitiesConfig = createAsyncThunk<
 >('config/retrieveEntitiesConfig', async (params, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await configApi.loadEntitiesDisplayConfig(params);
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
@@ -98,10 +98,10 @@ export const retrieveRiskIndicatorsConfig = createAsyncThunk<
 >('config/retrieveRiskIndicatorsConfig', async (params, thunkAPI) => {
   try {
     // TODO - define the api auth token
+    await isAccessTokenValid();
     return await configApi.loadRiskIndicatorsConfig(params);
   } catch (error) {
     const err = error as AxiosError;
-    await genRefreshToken(err);
     return thunkAPI.rejectWithValue(err.response?.data);
   }
 });
